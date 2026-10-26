@@ -1,0 +1,133 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{fontspec}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage[backend=biber,style=ieee]{biblatex}
+
+\setmainfont{Times New Roman}
+\setstretch{1.5}
+\addbibresource{references.bib}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\centering}
+  {\chaptername\ \thechapter}{0.5ex}{\Large}
+\titleformat{\section}{\normalfont\bfseries\large}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\bfseries\normalsize}{\thesubsection}{1em}{}
+\setlist[enumerate]{leftmargin=2em,itemsep=0.35em}
+\setlist[itemize]{leftmargin=2em,itemsep=0.35em}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    \vspace*{0.5in}
+    {\large MINISTRY OF EDUCATION AND TRAINING\par}
+    \vspace{0.15in}
+    {\Large\bfseries FPT UNIVERSITY\par}
+    \vspace{0.75in}
+    {\large\bfseries DBS401 COURSE PROJECT REPORT\par}
+    \vspace{0.5in}
+    {\LARGE\bfseries Developing a PostgreSQL Database Honeypot with AI-Based Attacker Behavior Analysis\par}
+    \vspace{0.65in}
+    {\large\bfseries Group 3\par}
+    \vspace{0.2in}
+    \begin{tabular}{ll}
+        Phan Thanh Thảo & SE193364 \\
+        Trần Thị Minh Anh & SE190902 \\
+        Vũ Trung Hiếu & SE192673 \\
+    \end{tabular}
+    \vspace{0.45in}
+
+    \begin{tabular}{rl}
+        Lecturer: & Hồ Hải \\
+        Course: & DBS401 \\
+    \end{tabular}
+
+    \vfill
+    {\large Ho Chi Minh City\par}
+    {\large October 2026\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+Internet-exposed database systems are attractive targets because they hold valuable information and expose direct query interfaces. Database honeypots can provide a controlled environment for observing these interactions, yet the usefulness of collected traces depends on what the logging configuration records and whether separate queries can be reconstructed as coherent attack sessions. This project proposes a local PostgreSQL honeypot with synthetic sensitive-looking data and a controlled, interactive query environment to study logging coverage and automated behavior analysis. Parameterized attack and benign scenarios will generate labeled query sequences with explicit dependencies, while four predefined logging profiles will be parsed into a common event schema. The study will first compare action-level recall, event-field completeness, and session reconstruction across inactivity thresholds. It will then compare a rule-based classifier with a locally run few-shot large language model on query windows containing the current query and selected preceding queries. Classification will be evaluated using macro-averaged F1 and per-class results; explanations will be evaluated against dependency-derived evidence using precision, recall, and F1. Finally, both methods will be evaluated without modification on isolated attack-technique families withheld during development. The planned outcomes are an empirical assessment of logging trade-offs, a reproducible query-level evaluation pipeline, and evidence about classification and explanation robustness under technique variation. Because the experiments have not yet been conducted, this abstract describes the project design and intended evaluation rather than empirical findings.
+
+\noindent\textbf{Keywords---} PostgreSQL honeypot, database auditing, attack-session reconstruction, behavioral analysis, few-shot learning, evidence-based classification, out-of-distribution generalization.
+
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\chapter{Introduction}
+
+\section{Background}
+Database management systems are part of the critical data layer of modern applications. When a database service is exposed through a public network, an attacker may probe its identity and configuration, attempt to authenticate, issue queries to discover or collect data, and try to alter database state or use database capabilities to reach other resources. Unlike a single isolated query, these actions can form a sequence in which later steps depend on information or access obtained earlier. Understanding such behavior therefore requires both reliable event capture and analysis that preserves the relationships among events.
+
+A database honeypot provides a controlled way to observe activity directed at a decoy service. Prior work has examined database honeypots as a means of studying real-world attacks. Song, Smaragdakis, and Griffioen deployed honeypots emulating several database systems, including PostgreSQL, and reported persistent credential attacks as well as multi-step exploitation patterns in higher-interaction deployments \cite{song2025decoy}. Earlier work also demonstrated the feasibility of building an interactive database honeypot using open-source technology \cite{wegerer2016database}. These studies establish the value of database-focused deception, while also motivating careful measurement of what a particular database deployment can observe.
+
+The raw trace is the foundation for downstream analysis. A logging profile that captures statements but omits relevant connection, error, or parameter information may leave gaps in the account of an interaction. Conversely, highly detailed logging can increase storage use and query-processing overhead, and may expose sensitive values if real data is used. Even when individual events are recorded, analysts still need to determine which events belong to the same logical session and which queries provide evidence for a particular attack stage. The logging design is therefore not merely an operational setting; it directly affects the completeness and reliability of subsequent behavior analysis.
+
+Recent work has also explored large language models for interpreting security alerts and mapping low-level observations to higher-level attack behavior. Schärmer \textit{et al.} examine large language models for intrusion-alert interpretation and report that carefully selected examples and additional context can affect classification performance and consistency \cite{schaermer2027alerts}. The RHINO framework similarly treats mapping network observations to adversarial techniques as a reasoning task and explicitly incorporates evidence-oriented validation to address unsupported or hallucinated mappings \cite{meng2025rhino}. These findings motivate testing contextual classification and evidence selection on database query traces, rather than assuming that a model label alone constitutes a reliable explanation.
+
+\section{Problem Statement}
+Despite the relevance of honeypots and language-model-assisted security analysis, three practical questions remain for the proposed PostgreSQL setting. First, logging profiles may differ in their ability to capture the actions needed to identify seven project-defined behavior classes: Discovery, Credential Access, Privilege Escalation, Collection, Exfiltration, Impact/Persistence, and Other/Noise. The project must quantify these differences and determine whether the resulting records contain the fields required for later analysis. Second, captured log lines may not directly identify a complete attack session. Sessionization based on an inactivity threshold can merge unrelated activity or split a real multi-step sequence, and its accuracy must be measured against known scenario ground truth. Third, query-level classification is difficult when the meaning of a query depends on earlier events. Rule-based methods may be transparent but brittle to variations; a few-shot language model may use context more flexibly but can produce unsupported labels or evidence identifiers. Neither approach should be considered reliable without measuring both classification and evidence quality.
+
+A further challenge is generalization. A method can perform well on variations that resemble its development scenarios while failing on a technique family that was not used to write its rules or examples. To assess this distinction, the evaluation needs a controlled split by scenario family, with held-out families kept isolated from method development. It must also compare not only predicted labels but the query evidence used to justify them. Without this separation and evidence-level evaluation, apparent performance may reflect leakage or familiar patterns rather than the ability to analyze unseen behavior.
+
+Accordingly, this project will develop a reproducible, local evaluation pipeline that connects PostgreSQL logging, session reconstruction, query classification, and evidence assessment. The project focuses on measuring the end-to-end suitability of captured interaction traces for behavior analysis, not on claiming that synthetic scenarios represent the full diversity of real-world attackers.
+
+\section{Research Questions and Objectives}
+The project is guided by the following overarching question: \textit{To what extent can a high-interaction PostgreSQL honeypot combined with behavior analysis record, identify, and explain attack stages from interaction logs, including when attackers use previously unseen techniques?}
+
+\subsection{RQ1: Logging and Session Reconstruction}
+\textbf{RQ1.} Which PostgreSQL honeypot logging configurations miss or mis-reconstruct which types of attack actions and sessions, to what extent, and which configuration is sufficient for subsequent behavior analysis?
+\begin{enumerate}[label=\textbf{RO1.\arabic*:}]
+    \item Measure action-level recall for each attack and benign behavior class across four predefined logging configurations.
+    \item Assess whether parsed logs contain the six required session attributes---user, source IP address, database, query, result, and parameter---and evaluate session reconstruction using pairwise precision, recall, and F1 over inactivity thresholds of 1, 5, 15, and 30 minutes.
+    \item Select the least costly logging configuration that satisfies the pre-established requirements for supporting the RQ2 analysis, considering capture coverage, field completeness, log volume, and query latency.
+\end{enumerate}
+
+\subsection{RQ2: Classification and Evidence}
+\textbf{RQ2.} Between a rule-based method and a locally run few-shot large language model, which more accurately assigns an attack stage to each query when preceding query context is available, and how closely does each method's selected evidence match the known evidence?
+\begin{enumerate}[label=\textbf{RO2.\arabic*:}]
+    \item Compare classification performance and technical output reliability using macro-averaged F1, per-class F1, a confusion matrix, invalid-output rate, and---for the language-model condition---the rate of fabricated evidence identifiers.
+    \item Evaluate predicted query evidence against dependency-derived ground truth using evidence precision, recall, and F1, and manually review a preselected 20\% sample to assess ground-truth quality.
+    \item Compare context windows containing the current query and 0, 2, or 4 preceding queries, measuring classification, evidence quality where context is available, and inference time.
+\end{enumerate}
+
+\subsection{RQ3: Generalization to Unseen Technique Families}
+\textbf{RQ3.} How much do the classification and evidence-matching performance of the two methods decrease on attack-technique families excluded from method development, compared with variations of known families?
+\begin{enumerate}[label=\textbf{RO3.\arabic*:}]
+    \item Measure the change in macro-averaged F1 and evidence F1 between the known-family evaluation set and the isolated unseen-family set.
+    \item Analyze per-class confusions and changes in unsupported evidence predictions on unseen families.
+    \item Examine how SQL structural novelty, PostgreSQL-specific functions or extensions, and the complexity of inter-query dependencies relate to performance decline.
+\end{enumerate}
+
+The attack labels are a project-defined taxonomy aligned with relevant MITRE ATT\&CK concepts; they are not presented as a verbatim set of official MITRE ATT\&CK tactics. Each scenario step will carry an explicit stage label and dependency links so that action, session, and evidence ground truth can be generated consistently.
+
+\section{Significance of the Project}
+The project has methodological and practical significance. Methodologically, it evaluates the entire path from database interaction to an interpretable query-level result. It separates logging coverage from session reconstruction, and separates label accuracy from evidence quality. This makes it possible to identify whether an analysis error originates in missing telemetry, incorrect session grouping, stage classification, or evidence selection. The use of scenario-family grouping and isolated held-out families is intended to reduce query-level leakage and provide a more meaningful test of generalization.
+
+Practically, the comparison can inform the choice of a logging profile by making coverage, field completeness, storage, and latency trade-offs explicit. The local deployment and synthetic sensitive-looking data are designed to support repeatable experiments without paid inference services or exposure of real organizational data. A common parser schema and reproducible scenario generator can also support future extension to additional PostgreSQL behaviors, classifiers, or logging profiles. The results should be interpreted as evidence about the controlled test environment and not as a direct estimate of detection rates in production networks.
+
+\section{Scope and Limitations}
+The project is limited to a locally run PostgreSQL honeypot in Docker, populated with fabricated data and sensitive-looking decoy tables. The environment is intended for controlled experimentation and is not designed to expose an unrestricted service to the public Internet. A parameterized Python scenario generator will vary query structure, object names, order, client/tool characteristics, and timing jitter. Scenarios will be informed by attack behaviors reported in the reviewed literature and threat reports, while their exact query sequences and dependency links will be documented as synthetic ground truth.
+
+RQ1 will compare four logging profiles. Their exact settings must be specified and frozen in the methodology before scenario runs; this introduction does not assume a profile definition that has not yet been finalized. Parsed records will be normalized to a shared schema. Sessionization will use source IP, user, and inactivity thresholds, and evaluation will compare reconstructed grouping with scenario ground truth. The experiment will record action recall, field completeness, pairwise session metrics, log volume, and query latency.
+
+RQ2 will compare a rule-based classifier with a locally hosted seven-to-eight-billion-parameter-class language model through Ollama. Both methods will receive consistently normalized query windows, and the model will use a constrained structured output containing a label and evidence identifiers. Development and evaluation will be split by session or scenario family; the test set will remain sealed until the methods are fixed. Evidence ground truth will consist of the target query and its declared dependencies that remain within the context window. RQ3 will use two or three attack-technique families isolated from the rule and prompt authors and will not permit post hoc tuning on those families.
+
+The main limitations are the finite and synthetic nature of the scenarios, the dependence of ground-truth quality on scenario design, and the possibility that behavior in a local emulation differs from interaction with a production database. A small number of held-out technique families cannot represent every unknown attack. Model outputs may also vary with hardware, model version, and inference settings; these will be recorded for reproducibility. Any manual evidence review will be limited to the prespecified sample and does not replace broader independent annotation.
+
+\section{Report Organization}
+This course project report introduces the research problem, objectives, significance, and scope. The planned project work is organized around three research questions: RQ1 evaluates logging coverage and session reconstruction; RQ2 compares rule-based and few-shot language-model classification and evidence selection; and RQ3 tests generalization to isolated attack-technique families. Subsequent project submissions will document the related work, implementation and methodology, experimental results, discussion, and conclusions as those stages are completed.
+
+\printbibliography[title={References}]
+
+\end{document}

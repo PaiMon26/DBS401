@@ -1,6 +1,6 @@
-# BÁO CÁO PROJECT MÔN DBS401
+# BÁO CÁO PROJECT DBS401
 
-## Xây dựng Honeypot Cơ sở dữ liệu PostgreSQL kết hợp AI Phân tích Hành vi Kẻ tấn công
+## Xây dựng honeypot cơ sở dữ liệu PostgreSQL kết hợp AI phân tích hành vi kẻ tấn công
 
 **Nhóm 3**
 
@@ -10,252 +10,253 @@
 | Trần Thị Minh Anh | SE190902 |
 | Vũ Trung Hiếu | SE192673 |
 
-**Giảng viên hướng dẫn:** Hồ Hải  
-**Môn học:** DBS401  
-**Địa điểm:** Thành phố Hồ Chí Minh  
-**Thời gian:** Tháng 10 năm 2026  
+**Giảng viên:** Hồ Hải
+**Môn học:** DBS401
+**Địa điểm:** Thành phố Hồ Chí Minh
+**Thời gian:** Tháng 10 năm 2026
 
 ---
 
 ## Tóm tắt
 
-Các hệ quản trị cơ sở dữ liệu (DBMS) kết nối Internet là mục tiêu tấn công hấp dẫn vì chúng lưu trữ dữ liệu nhạy cảm có giá trị cao và cung cấp giao diện truy vấn trực tiếp. Honeypot cơ sở dữ liệu tạo ra một môi trường có kiểm soát để quan sát các tương tác này; tuy nhiên, giá trị của dữ liệu thu thập được phụ thuộc chặt chẽ vào cấu hình ghi log và khả năng tái dựng các câu truy vấn rời rạc thành các phiên tấn công mạch lạc. Đề tài này đề xuất xây dựng một honeypot PostgreSQL chạy cục bộ, chứa dữ liệu giả lập có độ nhạy cảm cao và môi trường truy vấn tương tác có kiểm soát nhằm nghiên cứu độ bao phủ của log và phân tích hành vi tự động. Các kịch bản tấn công và truy vấn bình thường được tham số hóa sẽ tạo ra các chuỗi truy vấn có nhãn kèm mối quan hệ phụ thuộc tường minh; dữ liệu log thu được từ bốn cấu hình định trước sẽ được phân tích cú pháp và chuẩn hóa về một schema sự kiện chung. 
+Các hệ quản trị cơ sở dữ liệu kết nối Internet hấp dẫn kẻ tấn công vì lưu trữ thông tin có giá trị và cung cấp giao diện truy vấn trực tiếp. Honeypot cơ sở dữ liệu tạo môi trường có kiểm soát để quan sát tương tác, nhưng giá trị của dữ liệu thu thập phụ thuộc vào cấu hình ghi log và khả năng tái dựng các truy vấn thành phiên tấn công mạch lạc. Project đề xuất một honeypot PostgreSQL chạy cục bộ, dùng dữ liệu tổng hợp trông như nhạy cảm và môi trường truy vấn tương tác có kiểm soát để nghiên cứu độ bao phủ của log và phân tích hành vi tự động. Các kịch bản tấn công và bình thường được tham số hóa để tạo chuỗi truy vấn có nhãn cùng quan hệ phụ thuộc; log từ bốn cấu hình được chuẩn hóa về một schema sự kiện chung. Nghiên cứu dự kiến so sánh độ bao phủ hành động, độ đầy đủ trường dữ liệu và khả năng tái dựng phiên theo các ngưỡng thời gian không hoạt động. Sau đó, bộ phân loại dựa trên luật được so sánh với mô hình ngôn ngữ lớn few-shot chạy cục bộ trên các cửa sổ truy vấn. Việc phân loại được đánh giá bằng macro-F1 và kết quả theo lớp; bằng chứng giải thích được so sánh với ground truth từ quan hệ phụ thuộc. Cuối cùng, hai phương pháp được đánh giá trên các họ kỹ thuật tấn công được giữ riêng khỏi quá trình phát triển. Thí nghiệm chưa được thực hiện; phần này mô tả thiết kế và phương pháp đánh giá dự kiến, không trình bày kết quả thực nghiệm.
 
-Nghiên cứu trước hết so sánh độ bao phủ hành động (recall), mức độ đầy đủ của các trường sự kiện và hiệu quả tái dựng phiên qua các ngưỡng thời gian không hoạt động. Tiếp theo, đề tài so sánh bộ phân loại dựa trên luật (rule-based) với mô hình ngôn ngữ lớn (LLM) few-shot chạy cục bộ trên các cửa sổ truy vấn trượt gồm truy vấn hiện tại và các truy vấn trước đó. Hiệu năng phân loại được đánh giá bằng macro-F1 và kết quả theo từng lớp; phần giải thích được đánh giá thông qua độ chính xác (precision), độ bao phủ (recall) và F1 của bằng chứng so với ground truth sinh từ quan hệ phụ thuộc. Cuối cùng, cả hai phương pháp được đánh giá nguyên trạng (không qua tinh chỉnh) trên các họ kỹ thuật tấn công được cách ly hoàn toàn khỏi quá trình phát triển. Kết quả dự kiến của đề tài là một đánh giá thực nghiệm về sự đánh đổi giữa các cấu hình log, một pipeline đánh giá cấp truy vấn có thể tái lập, và bằng chứng thực nghiệm về độ vững chắc của phân loại và giải thích trước các biến thể kỹ thuật. Vì các thí nghiệm chưa được tiến hành, bản tóm tắt này mô tả thiết kế đề tài và phương pháp đánh giá dự kiến chứ không trình bày các kết quả thực nghiệm.
-
-**Từ khóa:** Honeypot PostgreSQL, kiểm toán cơ sở dữ liệu, tái dựng phiên tấn công, phân tích hành vi, học few-shot, phân loại dựa trên bằng chứng, khái quát hóa ngoài phân phối (OOD).
-
----
+**Từ khóa:** honeypot PostgreSQL; kiểm toán cơ sở dữ liệu; tái dựng phiên tấn công; phân tích hành vi; few-shot; phân loại dựa trên bằng chứng; khái quát hóa ngoài phân phối.
 
 # Chương 1. Giới thiệu
 
 ## 1.1. Bối cảnh
 
-Hệ quản trị cơ sở dữ liệu là một thành phần trọng yếu trong lớp lưu trữ dữ liệu của các ứng dụng hiện đại. Khi một dịch vụ cơ sở dữ liệu bị phơi bày trên mạng công cộng, kẻ tấn công có thể thăm dò danh tính và cấu hình hệ thống, thử xác thực đăng nhập, gửi các truy vấn để khám phá hoặc thu thập dữ liệu, thay đổi trạng thái cơ sở dữ liệu, hoặc khai thác các tính năng của DBMS để tiếp cận các tài nguyên hệ thống khác. Khác với một câu truy vấn đơn lẻ, các hành động này thường tạo thành một chuỗi kế tiếp mà trong đó các bước sau phụ thuộc vào thông tin hoặc quyền hạn thu được từ các bước trước. Do đó, việc thấu hiểu hành vi tấn công đòi hỏi vừa phải thu thập sự kiện một cách tin cậy, vừa phải phân tích và bảo toàn được mối quan hệ logic giữa các sự kiện.
+Hệ quản trị cơ sở dữ liệu là một phần quan trọng trong lớp dữ liệu của ứng dụng hiện đại. Khi dịch vụ cơ sở dữ liệu được mở trên mạng công cộng, kẻ tấn công có thể dò tìm hệ thống và cấu hình, thử xác thực, truy vấn để khám phá hoặc thu thập dữ liệu, thay đổi trạng thái cơ sở dữ liệu, hoặc tận dụng khả năng của DBMS để tiếp cận tài nguyên khác. Những hoạt động này có thể tạo thành chuỗi nhiều bước, trong đó hành động sau phụ thuộc vào thông tin hoặc quyền truy cập thu được ở bước trước. Vì vậy, phân tích hành vi cần vừa thu thập sự kiện đáng tin cậy, vừa giữ được quan hệ giữa chúng.
 
-Honeypot cơ sở dữ liệu cung cấp một phương thức có kiểm soát để quan sát các hoạt động nhắm vào dịch vụ mồi nhử. Song, Smaragdakis và Griffioen đã triển khai 278 honeypot trong 20 ngày, bao gồm các mô phỏng tương tác thấp của PostgreSQL và các hệ CSDL khác; nghiên cứu ghi nhận các cuộc tấn công brute-force dai dẳng cùng với các hành vi khai thác tương tác trung bình và cao nhằm thao túng dữ liệu, sao chép, xóa dữ liệu hoặc lợi dụng DBMS để xâm nhập hệ thống bên dưới [song_decoy_2025]. Các nghiên cứu trước đó cũng đã chứng minh tính khả thi của việc xây dựng một honeypot cơ sở dữ liệu tương tác bằng MySQL mã nguồn mở kết hợp với các honeytoken để đánh lừa [wegerer_defeating_2016]. Những công trình này khẳng định giá trị thực tiễn của cơ chế đánh lừa hướng CSDL, đồng thời đặt ra yêu cầu phải đo lường cẩn trọng khả năng ghi nhận của từng cấu hình triển khai cụ thể.
+Honeypot cơ sở dữ liệu cung cấp môi trường có kiểm soát để quan sát hoạt động hướng đến một dịch vụ mồi. Song, Smaragdakis và Griffioen triển khai 278 honeypot, trong đó có PostgreSQL; họ ghi nhận các nỗ lực brute-force kéo dài và các kiểu khai thác nhiều bước ở những triển khai có mức tương tác cao hơn [Song et al.]. Wegerer và Tjoa cũng trình bày khả năng xây dựng honeypot cơ sở dữ liệu bằng công nghệ MySQL mã nguồn mở [Wegerer & Tjoa]. Các công trình này cho thấy giá trị của deception tập trung vào DBMS và đặt ra yêu cầu đo lường cẩn thận khả năng quan sát của từng cách triển khai.
 
-Dấu vết log thô là nền tảng cho mọi phân tích phía sau. Một cấu hình ghi log chỉ ghi lại câu lệnh (statement) nhưng bỏ sót thông tin kết nối, thông báo lỗi hoặc tham số truy vấn có thể tạo ra các lỗ hổng thông tin trong chuỗi tương tác. Ngược lại, việc ghi log quá chi tiết sẽ làm tăng dung lượng lưu trữ đĩa và tăng độ trễ xử lý truy vấn, đồng thời có thể để lộ các giá trị nhạy cảm nếu dùng dữ liệu thật. Ngay cả khi từng sự kiện riêng lẻ được ghi nhận đầy đủ, các nhà phân tích vẫn phải giải quyết bài toán: những sự kiện nào thuộc về cùng một phiên logic, và những câu truy vấn nào thực sự là bằng chứng cho một giai đoạn tấn công cụ thể. Do đó, cấu hình ghi log không chỉ là một thiết lập vận hành thuần túy; nó trực tiếp quyết định độ đầy đủ và độ tin cậy của toàn bộ quá trình phân tích hành vi tiếp theo.
+Log thô là nền tảng cho phân tích tiếp theo. Cấu hình chỉ ghi câu lệnh nhưng bỏ thông tin kết nối, lỗi hoặc tham số có thể khiến hồ sơ tương tác không đầy đủ. Ngược lại, ghi quá chi tiết có thể tăng dung lượng, chi phí xử lý và nguy cơ lộ dữ liệu nhạy cảm. Ngay cả khi sự kiện đã được ghi, vẫn cần xác định sự kiện nào thuộc cùng phiên logic và truy vấn nào là bằng chứng cho một giai đoạn tấn công. Do đó, thiết kế logging ảnh hưởng trực tiếp đến độ đầy đủ và độ tin cậy của phân tích hành vi.
 
-Các nghiên cứu gần đây cũng đã bắt đầu khám phá tiềm năng của mô hình ngôn ngữ lớn (LLM) trong việc diễn giải cảnh báo an ninh và ánh xạ các quan sát mức thấp sang hành vi tấn công mức cao. Schärmer et al. đánh giá ChatGPT và Gemini trong phân loại cảnh báo IDS, chỉ ra rằng các ví dụ few-shot và thông tin ngữ cảnh hệ thống được lựa chọn kỹ lưỡng sẽ cải thiện đáng kể hiệu năng phân loại, đồng thời nhấn mạnh các hạn chế về chi phí, độ ổn định và rủi ro rò rỉ dữ liệu [afzal_let_2027]. Meng et al. giới thiệu framework RHINO nhằm ánh xạ log mạng sang các chiến thuật và kỹ thuật đối kháng; họ chứng minh rằng việc phân loại trực tiếp một bước bằng LLM thường dẫn đến hiện tượng bịa đặt (hallucination) tên kỹ thuật và tạo ra các ánh xạ thiếu ngữ cảnh, từ đó đề xuất quy trình suy luận có hướng dẫn (guided reasoning) như một giải pháp thay thế [meng_rhino_2025]. Những phát hiện này là động lực thúc đẩy việc thử nghiệm phân loại theo ngữ cảnh và trích xuất bằng chứng trên chuỗi truy vấn cơ sở dữ liệu, thay vì mặc định thừa nhận nhãn do mô hình đưa ra tự thân nó đã là một lời giải thích đáng tin cậy.
+Nghiên cứu gần đây dùng mô hình ngôn ngữ lớn để diễn giải cảnh báo an ninh và ánh xạ quan sát mức thấp sang hành vi tấn công mức cao. Schärmer và cộng sự cho thấy ví dụ few-shot được chọn cẩn thận cùng ngữ cảnh hệ thống có thể hỗ trợ phân loại cảnh báo IDS, nhưng chi phí, độ tin cậy và nguy cơ lộ dữ liệu vẫn là hạn chế [Schärmer et al.]. RHINO xem việc ánh xạ log mạng sang kỹ thuật đối phương là nhiệm vụ suy luận có hướng dẫn và kiểm tra bằng chứng để hạn chế ánh xạ thiếu căn cứ [Meng et al.]. Các kết quả này gợi ý cần kiểm tra phân loại theo ngữ cảnh và lựa chọn bằng chứng trên log truy vấn DB, thay vì mặc định nhãn do mô hình đưa ra tự nó đã là lời giải thích đáng tin cậy.
 
 ## 1.2. Phát biểu vấn đề
 
-Mặc dù honeypot và phân tích an ninh hỗ trợ bởi mô hình ngôn ngữ đã được quan tâm nghiên cứu, vẫn còn tồn tại ba câu hỏi thực tiễn lớn trong bối cảnh PostgreSQL của đề tài này:
+Trong bối cảnh PostgreSQL của project, có ba vấn đề thực tiễn. Thứ nhất, các cấu hình logging có thể khác nhau về khả năng ghi nhận hành động cần thiết để nhận diện bảy lớp hành vi do project quy định: Discovery, Credential Access, Privilege Escalation, Collection, Exfiltration, Impact và Noise. Project cần đo những khác biệt này và xác định bản ghi có đủ trường cho phân tích tiếp theo hay không. Thứ hai, các dòng log riêng lẻ không tự cho biết một phiên tấn công hoàn chỉnh. Gom phiên theo ngưỡng thời gian không hoạt động có thể ghép nhầm các hoạt động không liên quan hoặc tách rời một chuỗi nhiều bước; cần đối chiếu với ground truth của kịch bản. Thứ ba, phân loại truy vấn khó khi ý nghĩa phụ thuộc vào truy vấn trước. Luật có thể minh bạch nhưng cứng trước biến thể; LLM few-shot có thể tận dụng ngữ cảnh tốt hơn nhưng đưa ra nhãn hoặc mã bằng chứng thiếu căn cứ. Cần đo đồng thời chất lượng phân loại và chất lượng bằng chứng.
 
-1. **Khả năng bao phủ của cấu hình log:** Các cấu hình ghi log có thể khác biệt lớn về khả năng ghi nhận các hành động cần thiết để nhận diện 8 nhóm hành vi do đề tài quy định: *Discovery (Khám phá), Credential Access (Truy cập thông tin xác thực), Privilege Escalation (Leo thang đặc quyền), Execution (Thực thi mã), Collection (Thu thập dữ liệu), Exfiltration (Tuồn dữ liệu), Impact/Persistence (Tác động/Duy trì truy cập)* và *Other/Noise (Nhiễu/Hành vi khác)*. Đề tài cần định lượng chính xác sự khác biệt này và xác định xem bản ghi thu được có đủ các trường thuộc tính cần thiết cho bước phân tích tiếp theo hay không.
-2. **Độ chính xác của việc tái dựng phiên:** Các dòng log thô thu được không trực tiếp chỉ ra một phiên tấn công hoàn chỉnh. Việc gom phiên (sessionization) dựa trên ngưỡng thời gian không hoạt động (inactivity threshold) có thể gộp nhầm các hoạt động không liên quan hoặc chia cắt một chuỗi nhiều bước thực tế. Do đó, độ chính xác của quá trình tái dựng phiên cần được đo lường đối chiếu với ground truth của kịch bản đã biết.
-3. **Phân loại cấp truy vấn và chất lượng bằng chứng:** Việc phân loại ở cấp độ từng truy vấn trở nên rất phức tạp khi ngữ nghĩa của một câu truy vấn phụ thuộc vào các sự kiện diễn ra trước đó. Phương pháp dựa trên luật (rule-based) có tính minh bạch cao nhưng kém linh hoạt trước các biến thể; trong khi đó, mô hình ngôn ngữ few-shot có thể khai thác ngữ cảnh linh hoạt hơn nhưng lại có nguy cơ đưa ra nhãn không có căn cứ hoặc bịa đặt mã định danh bằng chứng. Không thể xem phương pháp nào là đáng tin cậy nếu chưa đo lường đồng thời cả chất lượng phân loại và chất lượng bằng chứng giải thích.
+Một thách thức nữa là khả năng khái quát hóa. Phương pháp có thể hoạt động tốt với biến thể gần kịch bản phát triển nhưng thất bại trước họ kỹ thuật chưa dùng để viết luật hoặc ví dụ. Đánh giá cần chia dữ liệu theo họ kịch bản, cách ly họ giữ lại khỏi quá trình phát triển và đánh giá cả nhãn dự đoán lẫn truy vấn được dùng làm bằng chứng.
 
-Một thách thức lớn khác là **khả năng khái quát hóa (generalization)**. Một phương pháp có thể hoạt động rất tốt trên các biến thể tương đồng với kịch bản dùng khi phát triển nhưng lại thất bại hoàn toàn trước một họ kỹ thuật mới chưa từng xuất hiện trong quá trình viết luật hoặc tạo prompt. Để phân biệt rõ hai trường hợp này, quá trình đánh giá đòi hỏi phải phân chia dữ liệu có kiểm soát theo họ kịch bản, và cách ly nghiêm ngặt các họ kiểm thử khỏi quá trình xây dựng phương pháp. Quá trình đánh giá cũng phải đối chiếu không chỉ nhãn dự đoán mà cả tập truy vấn được chọn làm bằng chứng. Nếu thiếu sự phân tách này và thiếu đánh giá ở cấp độ bằng chứng, hiệu năng cao bề ngoài có thể chỉ là hệ quả của rò rỉ dữ liệu (data leakage) hoặc việc khớp các mẫu quen thuộc, chứ không phản ánh năng lực phân tích hành vi mới.
-
-Vì vậy, đề tài sẽ xây dựng một pipeline đánh giá cục bộ, có khả năng tái lập, kết nối chặt chẽ giữa việc ghi log PostgreSQL, tái dựng phiên, phân loại truy vấn và đánh giá bằng chứng. Mục tiêu là đo lường mức độ phù hợp từ đầu đến cuối của log tương tác phục vụ phân tích hành vi, chứ không khẳng định rằng các kịch bản tổng hợp đại diện đầy đủ cho mọi hành vi tấn công ngoài thực tế.
+Vì vậy, project sẽ xây dựng pipeline đánh giá cục bộ, có thể tái lập, kết nối việc ghi log PostgreSQL, tái dựng phiên, phân loại truy vấn và đánh giá bằng chứng. Mục tiêu là đo mức phù hợp đầu-cuối của trace tương tác được thu thập, không khẳng định các kịch bản tổng hợp đại diện đầy đủ cho mọi cuộc tấn công thực tế.
 
 ## 1.3. Câu hỏi nghiên cứu và mục tiêu
 
-Câu hỏi tổng quát của đề tài là: **Honeypot PostgreSQL tương tác cao kết hợp với phân tích hành vi có thể ghi nhận, nhận diện và giải thích các giai đoạn tấn công từ log tương tác đến mức nào, kể cả khi kẻ tấn công sử dụng các kỹ thuật chưa từng thấy trong quá trình xây dựng phương pháp?**
+Câu hỏi tổng quát: Honeypot PostgreSQL có mức tương tác cao kết hợp phân tích hành vi có thể ghi nhận, nhận diện và giải thích các giai đoạn tấn công từ log đến mức nào, kể cả khi đối phương dùng kỹ thuật chưa gặp?
 
-### RQ1: Khả năng ghi log và tái dựng phiên
+### RQ1: Logging và tái dựng phiên
 
-**RQ1:** Các cấu hình ghi log của honeypot PostgreSQL bỏ sót hoặc tái dựng sai những loại hành động và phiên tấn công nào, ở mức độ bao nhiêu, và cấu hình nào đủ để phục vụ phân tích hành vi ở bước tiếp theo?
+**RQ1.** Các cấu hình logging của honeypot PostgreSQL bỏ sót hoặc tái dựng sai loại hành động và phiên nào, ở mức độ nào, và cấu hình nào đủ cho phân tích hành vi tiếp theo?
 
-* **RO1.1:** Đo độ bao phủ hành động (recall) theo từng nhóm hành vi tấn công và bình thường trên 4 cấu hình log định trước.
-* **RO1.2:** Đánh giá log đã phân tích cú pháp có đủ 6 trường thuộc tính cần thiết hay không: user, địa chỉ IP nguồn, database, câu lệnh truy vấn, kết quả thực thi (mã lỗi/trạng thái) và tham số. Đánh giá độ chính xác tái dựng phiên bằng pairwise Precision, Recall và F1 với 4 ngưỡng thời gian không hoạt động: 1, 5, 15 và 30 phút.
+- **RO1.1:** Đo action-level recall cho từng lớp hành vi tấn công và bình thường trên bốn cấu hình logging.
+- **RO1.2:** Kiểm tra log có sáu thuộc tính phiên cần thiết hay không: user, IP nguồn, database, query, kết quả và tham số; đánh giá tái dựng phiên bằng precision, recall, F1 theo các ngưỡng không hoạt động 1, 5, 15 và 30 phút.
+- **RO1.3:** Chọn cấu hình có chi phí thấp nhất nhưng đạt yêu cầu định trước về độ bao phủ, độ đầy đủ trường, dung lượng log và độ trễ truy vấn.
 
 ### RQ2: Phân loại và bằng chứng
 
-**RQ2:** Giữa phương pháp dựa trên luật và mô hình ngôn ngữ lớn few-shot chạy cục bộ, phương pháp nào gán giai đoạn tấn công cho từng truy vấn (có xét ngữ cảnh các truy vấn trước đó) chính xác hơn, và tập truy vấn mà mỗi phương pháp chỉ ra làm bằng chứng khớp với bằng chứng thực tế đến mức nào?
+**RQ2.** Giữa phương pháp dựa trên luật và LLM few-shot chạy cục bộ, phương pháp nào gán giai đoạn tấn công cho từng truy vấn chính xác hơn khi có ngữ cảnh truy vấn trước đó, và bằng chứng được chọn khớp ground truth đến đâu?
 
-* **RO2.1:** Đánh giá hiệu năng phân loại giai đoạn tấn công của phương pháp dựa trên luật và LLM few-shot trên các cửa sổ ngữ cảnh $k \in \{0, 2, 4\}$ truy vấn trước đó, sử dụng macro-averaged F1, F1 từng lớp và ma trận nhầm lẫn (confusion matrix).
-* **RO2.2:** Đo lường chất lượng bằng chứng giải thích thông qua precision, recall và F1 của tập bằng chứng so với ground truth sinh từ quan hệ phụ thuộc; đối với LLM, đo lường thêm tỉ lệ sinh đầu ra sai định dạng (malformed output) và tỉ lệ bịa đặt mã định danh bằng chứng (hallucinated evidence IDs).
+- **RO2.1:** So sánh macro-F1, F1 từng lớp, ma trận nhầm lẫn, tỷ lệ đầu ra sai schema và tỷ lệ mã bằng chứng giả.
+- **RO2.2:** Đánh giá bằng chứng dự đoán so với ground truth sinh từ quan hệ phụ thuộc bằng precision, recall và F1; rà soát thủ công mẫu 20% đã chọn trước.
+- **RO2.3:** So sánh cửa sổ gồm truy vấn hiện tại và 0, 2 hoặc 4 truy vấn trước đó; đo hiệu năng phân loại, chất lượng bằng chứng khi có ngữ cảnh và thời gian suy luận.
 
-### RQ3: Khái quát hóa sang các họ kỹ thuật chưa biết
+### RQ3: Khái quát hóa sang họ kỹ thuật chưa gặp
 
-**RQ3:** Độ chính xác phân loại và độ khớp bằng chứng của hai phương pháp giảm bao nhiêu khi gặp họ kỹ thuật tấn công không được dùng trong quá trình xây dựng phương pháp, so với khi gặp biến thể của kỹ thuật đã biết?
+**RQ3.** Hiệu năng phân loại và khớp bằng chứng của hai phương pháp giảm bao nhiêu trên các họ kỹ thuật bị loại khỏi quá trình phát triển so với biến thể của họ đã biết?
 
-* **RO3.1:** Đo mức suy giảm $\Delta$ macro-F1 và $\Delta$ evidence F1 giữa tập biến thể đã biết và tập các họ kỹ thuật mới được cách ly.
-* **RO3.2:** Báo cáo F1 theo từng lớp trên tập họ kỹ thuật mới, đo lường sự thay đổi trong tỉ lệ bịa bằng chứng của LLM, và ước lượng khoảng tin cậy bootstrap theo phiên (session-level bootstrap confidence interval) cho hiệu năng của từng phương pháp.
+- **RO3.1:** Đo thay đổi macro-F1 và evidence-F1 giữa tập họ đã biết và tập họ chưa gặp được cách ly.
+- **RO3.2:** Phân tích nhầm lẫn theo lớp và thay đổi về bằng chứng không có căn cứ trên các họ chưa gặp.
+- **RO3.3:** Xem xét mức độ mới về cấu trúc SQL, hàm/extension riêng PostgreSQL và độ phức tạp phụ thuộc giữa truy vấn liên hệ thế nào với mức suy giảm.
 
-## 1.4. Ý nghĩa của đề tài
+Nhãn tấn công là taxonomy của project, có liên hệ với các khái niệm MITRE ATT&CK nhưng không được trình bày như nguyên văn các tactic chính thức. Mỗi bước kịch bản có nhãn giai đoạn và liên kết phụ thuộc tường minh để tạo ground truth nhất quán.
 
-Đề tài kết nối trực tiếp cấu hình ghi log của PostgreSQL với yêu cầu dữ liệu của các thuật toán phân tích hành vi. Về mặt vận hành, kết quả so sánh các cấu hình log sẽ giúp người quản trị xác định rõ những khoảng trống thông tin và đánh đổi hiệu năng (dung lượng log, độ trễ query) khi lựa chọn cấu hình ghi log cho cơ sở dữ liệu. Về mặt phân tích an ninh, việc đánh giá song song giữa hệ luật minh bạch và mô hình LLM few-shot cục bộ sẽ làm rõ liệu việc bổ sung ngữ cảnh chuỗi và năng lực suy luận ngôn ngữ có thực sự cải thiện khả năng phát hiện và giải thích giai đoạn tấn công hay không. Về mặt phương pháp luận, việc cách ly các họ kỹ thuật mới và đánh giá ở cấp độ bằng chứng sẽ cung cấp một thước đo thực tế về độ bền vững của mô hình AI khi đối mặt với các kỹ thuật tấn công ngoài phân phối (out-of-distribution).
+## 1.4. Ý nghĩa của project
+
+Về phương pháp, project đánh giá toàn bộ quá trình từ tương tác DB đến kết quả truy vấn có thể diễn giải. Project tách độ bao phủ log khỏi tái dựng phiên, đồng thời tách độ chính xác nhãn khỏi chất lượng bằng chứng. Nhờ đó có thể xác định lỗi bắt nguồn từ thiếu telemetry, gom phiên sai, phân loại giai đoạn hay chọn bằng chứng.
+
+Về thực tiễn, phép so sánh giúp làm rõ đánh đổi giữa độ bao phủ, độ đầy đủ trường, dung lượng và độ trễ khi chọn cấu hình logging. Triển khai cục bộ với dữ liệu giả hỗ trợ thí nghiệm lặp lại mà không cần dịch vụ suy luận trả phí hoặc dữ liệu thật của tổ chức. Kết quả chỉ phản ánh môi trường thử nghiệm được kiểm soát, không phải tỷ lệ phát hiện trong mạng sản xuất.
 
 ## 1.5. Phạm vi và hạn chế
 
-Đề tài sử dụng một honeypot PostgreSQL tương tác cao triển khai trong môi trường Docker cục bộ, kết hợp dữ liệu giả lập có bảng nhạy cảm và không phơi bày dịch vụ ra mạng Internet công cộng. Một bộ sinh kịch bản Python có tham số sẽ tự động biến đổi cấu trúc truy vấn, tên đối tượng, thứ tự câu lệnh, đặc trưng công cụ/client và độ lệch thời gian (timing jitter). Các kịch bản được xây dựng dựa trên hành vi tấn công ghi nhận trong y văn thực tế, bao gồm kỹ thuật dò quét thông tin xác thực, truy cập dữ liệu sau xác thực, và thực thi chương trình ngoài hệ thống do Song et al. báo cáo [song_decoy_2025], cùng kỹ thuật khám phá thông tin xác thực sau xâm nhập do Gómez-López et al. mô tả [gomez-lopez_multi-agent_2026]. Chuỗi truy vấn và liên kết phụ thuộc cụ thể được lập tài liệu làm ground truth tổng hợp chứ không sao chép nguyên trạng một chiến dịch tấn công cụ thể.
+Project giới hạn ở honeypot PostgreSQL chạy cục bộ trong Docker, dùng dữ liệu giả và bảng mồi trông như chứa thông tin nhạy cảm. Môi trường không được thiết kế để mở dịch vụ không giới hạn ra Internet. Bộ sinh kịch bản Python có tham số sẽ thay đổi cấu trúc truy vấn, tên đối tượng, thứ tự, công cụ/client và độ lệch thời gian. Kịch bản lấy cảm hứng từ hành vi được tài liệu nghiên cứu mô tả; chuỗi truy vấn và quan hệ phụ thuộc cụ thể được ghi nhận như ground truth tổng hợp.
 
-### Cấu hình ghi log
-RQ1 so sánh 4 cấu hình ghi log, các tham số chính xác được cố định trước khi thực nghiệm:
-* **C0:** Cấu hình log cơ sở của PostgreSQL với `log_statement = all`.
-* **C1:** Kích hoạt kiểm toán phiên của tiện ích mở rộng pgAudit (`pgaudit.log = 'read, write, function, role, ddl'`).
-* **C2:** Mở rộng từ C1, bổ sung thêm log kết nối và lỗi: `log_connections = on`, `log_disconnections = on`, `log_min_error_statement = error`, và `pgaudit.log_parameter = on`.
-* **C3:** Bổ sung proxy hoặc cơ chế bắt gói tin mạng (tùy chọn theo quỹ thời gian thực hiện).
+### Cấu hình logging
 
-Tất cả các bản ghi log sau khi parse được đưa về một schema sự kiện chung. Thuật toán gộp phiên logic sử dụng IP nguồn, user và các ngưỡng thời gian không hoạt động (1, 5, 15, 30 phút). Các chỉ số đo lường gồm: recall hành động theo nhóm, độ đầy đủ trường, pairwise precision/recall/F1 của phiên, dung lượng log trên mỗi phiên và độ trễ truy vấn tăng thêm.
+RQ1 so sánh bốn cấu hình, giá trị tham số chính thức sẽ được chốt trong phương pháp trước khi chạy kịch bản:
 
-### Hệ thống phân loại và gán nhãn
-Hệ thống nhãn gồm 8 lớp: Discovery, Credential Access, Privilege Escalation, Execution, Collection, Exfiltration, Impact/Persistence, và Other/Noise. Nhãn *Execution* được bổ sung tường minh vì các câu lệnh gọi tính năng thực thi chương trình hệ thống như `COPY ... FROM PROGRAM` là mẫu tấn công thực tế rất phổ biến trên PostgreSQL [song_decoy_2025] và không thể xếp lẫn vào các nhóm khác. Các quy tắc gán nhãn cho các hàm truy cập tệp và đối tượng lớn (Large Object) như `pg_read_file` và `lo_export` được viết và chốt trước khi sinh kịch bản; mọi trường hợp lưỡng nghĩa đều được ghi lại trong tài liệu ground truth.
+- **C0:** `log_statement = all`.
+- **C1:** bật logging phiên của pgAudit.
+- **C2:** mở rộng C1 với `log_connections`, `log_disconnections`, `log_min_error_statement` và `pgaudit.log_parameter`.
+- **C3:** cấu hình proxy hoặc packet capture; chỉ báo cáo nếu triển khai kịp.
 
-### Phân loại và trích xuất bằng chứng
-RQ2 so sánh bộ phân loại dựa trên luật với một mô hình ngôn ngữ lớn cục bộ khoảng 7–8 tỷ tham số phục vụ qua Ollama. Các mô hình ứng viên gồm Qwen2.5-7B-Instruct, Llama-3.1-8B-Instruct và Mistral-7B-Instruct; lựa chọn cuối cùng dựa trên bài đo tốc độ suy luận trên khoảng 20 cửa sổ truy vấn mẫu. Cả hai phương pháp đều nhận đầu vào là các cửa sổ truy vấn đã được chuẩn hóa (thay thế literal bằng placeholder, đổi tên bảng ngẫu nhiên). LLM bắt buộc sinh đầu ra JSON theo schema gồm nhãn và danh sách ID bằng chứng (`{label, evidence_ids}`). Schema ràng buộc cú pháp nhưng không cưỡng ép ID phải thuộc cửa sổ lúc giải mã, giúp đo lường được hiện tượng bịa đặt ID bằng chứng thay vì ép về 0. 
+Log được chuẩn hóa về một schema chung. Sessionization dựa trên IP nguồn, user và ngưỡng thời gian không hoạt động. Các chỉ số gồm action recall, độ đầy đủ trường, chỉ số ghép phiên theo cặp, dung lượng log và độ trễ truy vấn.
 
-Dữ liệu train/dev/test được chia theo phiên hoặc họ kịch bản, và tập test được niêm phong cho đến khi luật và prompt hoàn thiện. Ground truth bằng chứng được định nghĩa gồm: `{truy vấn mục tiêu} ∪ {các truy vấn nó phụ thuộc còn nằm trong cửa sổ}`. Một mẫu kiểm tra thủ công 20% bằng chứng được thực hiện độc lập sau khi luật và prompt đã chốt để đánh giá độ tin cậy của ground truth tự động.
+### Taxonomy và gán nhãn
 
-Đối với RQ3, 2–3 họ kỹ thuật mới (như thao tác Large Object, extension dblink, hàm `SECURITY DEFINER`) được xây dựng bởi người độc lập và cách ly hoàn toàn khỏi quá trình viết luật và prompt. Hạn chế chính của đề tài là tính chất tổng hợp của kịch bản, sự phụ thuộc của ground truth vào thiết kế kịch bản, và khả năng hành vi trong môi trường giả lập khác với CSDL sản xuất. Tính chân thực của dữ liệu mồi nhử cũng là một giới hạn: các nghiên cứu trước chỉ ra rằng kẻ tấn công nâng cao có thể nhận diện hầu hết các honeytoken mã nguồn mở phổ biến mà không kích hoạt cảnh báo [reiser_honeysweeper_2022], do đó các bản ghi giả lập được kiểm tra tính hợp lý nhưng không mặc định là không thể bị phát hiện.
+Bảy nhãn gồm sáu giai đoạn tấn công và một lớp bình thường là Noise. `COPY ... FROM PROGRAM` được gán Impact vì nó làm thay đổi trạng thái hệ thống bằng cách chạy lệnh hệ điều hành. Quy tắc cho các hàm truy cập file và large object như `pg_read_file` và `lo_export` sẽ được chốt trước khi sinh kịch bản; trường hợp mơ hồ được ghi lại trong tài liệu ground truth.
+
+### Phân loại và bằng chứng
+
+RQ2 so sánh bộ phân loại luật với LLM cục bộ khoảng 7–8 tỷ tham số qua Ollama. Các mô hình ứng viên gồm Qwen2.5-7B-Instruct, Llama-3.1-8B-Instruct và Mistral-7B-Instruct; lựa chọn cuối dựa trên thử tốc độ khoảng 20 cửa sổ. Cả hai phương pháp nhận cửa sổ truy vấn đã chuẩn hóa. LLM trả JSON gồm nhãn và danh sách mã bằng chứng. Schema giới hạn định dạng nhưng không chặn mã ngoài cửa sổ trong lúc giải mã, để có thể đo tỷ lệ mã giả. Tập test được giữ kín cho đến khi chốt phương pháp. Ground truth bằng chứng gồm truy vấn mục tiêu và các phụ thuộc được khai báo nằm trong cửa sổ.
+
+### Hạn chế
+
+Kịch bản hữu hạn và tổng hợp; chất lượng ground truth phụ thuộc thiết kế kịch bản; môi trường mô phỏng cục bộ có thể khác DB sản xuất. Một vài họ giữ lại không đại diện mọi tấn công chưa biết. Đầu ra mô hình có thể khác theo phần cứng, phiên bản và thiết lập suy luận. Rà soát thủ công chỉ thực hiện trên mẫu định trước.
 
 ## 1.6. Cấu trúc báo cáo
 
-Báo cáo project môn học này bao gồm: Chương 1 giới thiệu bài toán nghiên cứu, mục tiêu, ý nghĩa và phạm vi; Chương 2 tổng quan toàn diện các công trình nghiên cứu liên quan và xác định rõ đóng góp khoa học của đề tài. Các nội dung triển khai chi tiết, kết quả thực nghiệm, thảo luận và kết luận sẽ được hoàn thiện trong các giai đoạn tiếp theo của đồ án.
-
----
+Báo cáo trình bày vấn đề, mục tiêu, ý nghĩa và phạm vi nghiên cứu; tổng quan tài liệu; phương pháp và kế hoạch đánh giá. Các phần kết quả, thảo luận và kết luận sẽ được hoàn thiện khi project thực hiện các giai đoạn tương ứng.
 
 # Chương 2. Tổng quan tài liệu
 
-## 2.1. Phạm vi của tổng quan
+## 2.1. Phạm vi tổng quan
 
-Chương này phân tích các nghiên cứu học thuật hỗ trợ trực tiếp cho các giai đoạn của đề tài: triển khai honeypot cơ sở dữ liệu và hành vi kẻ tấn công, ghi log kiểm toán và tái dựng tấn công, giải thích dữ liệu an ninh dựa trên mô hình học máy và LLM, khả năng khái quát hóa sang hành vi tấn công chưa biết, và đánh giá tính chân thực của honeypot. Các công trình được tổng quan khác biệt về nền tảng, mức độ tương tác, loại dữ liệu và môi trường thực nghiệm. Do đó, kết quả của chúng đóng vai trò định hướng thiết kế và phương pháp luận cho đề tài, chứ không thể dùng để suy đoán trước hiệu năng trên chuỗi truy vấn PostgreSQL có kiểm soát.
+Chương này xem xét các nghiên cứu về honeypot cơ sở dữ liệu và hành vi đối phương, audit logging và tái dựng tấn công, diễn giải dữ liệu an ninh bằng ML/LLM, khái quát hóa sang hành vi chưa gặp và đánh giá tính chân thực của honeypot. Các nghiên cứu khác nhau về nền tảng, mức tương tác, loại dữ liệu và điều kiện đánh giá; vì vậy, kết quả dùng để định hướng thiết kế chứ không dự đoán trực tiếp hiệu năng trên trace PostgreSQL tổng hợp của project.
 
-## 2.2. Honeypot cơ sở dữ liệu và hành vi kẻ tấn công
+## 2.2. Honeypot cơ sở dữ liệu và hành vi tấn công
 
-Song, Smaragdakis và Griffioen đã tiến hành triển khai 278 honeypot trong vòng 20 ngày vào tháng 3–4 năm 2024 [song_decoy_2025]. Trong đó, 220 honeypot tương tác thấp mô phỏng MySQL, MSSQL, PostgreSQL và Redis ghi nhận hoạt động quét tương đối thấp nhưng các nỗ lực dò quét mật khẩu (brute-force) diễn ra dai dẳng. 58 honeypot tương tác trung bình và cao bộc lộ ba dạng khai thác rõ rệt: (1) thao túng trực tiếp hệ quản trị CSDL, (2) tấn công đòi tiền chuộc thông qua việc sao chép và xóa dữ liệu mục tiêu, và (3) lợi dụng CSDL làm bàn đạp để chiếm quyền điều khiển hệ thống bên dưới. Đây là công trình thực nghiệm liên quan trực tiếp nhất đến đề tài vì khảo sát trực tiếp PostgreSQL và các chuỗi hành vi nhiều bước. Do nghiên cứu của Song et al. triển khai trực diện trên Internet, lưu lượng và tần suất quan sát được sẽ khác với môi trường thực nghiệm cục bộ có kiểm soát của đề tài này.
+Song, Smaragdakis và Griffioen triển khai 278 honeypot trong 20 ngày, trong đó 220 honeypot tương tác thấp mô phỏng MySQL, MSSQL, PostgreSQL và Redis; 58 honeypot tương tác trung bình/cao cho phép quan sát khai thác sâu hơn [Song et al.]. Nhóm nghiên cứu ghi nhận dò quét, brute-force kéo dài, thao tác dữ liệu, sao chép/xóa dữ liệu và việc dùng DBMS làm đường tiếp cận máy chủ nền. Họ cũng chuẩn hóa log nhiều định dạng về dạng chung để phân tích. Đây là nghiên cứu thực nghiệm gần đề tài nhất vì có PostgreSQL và hành vi nhiều bước. Tuy nhiên, triển khai Internet-facing khác với thí nghiệm cục bộ, nên tần suất quan sát không thể xem là kết quả kỳ vọng của project.
 
-Rocha và Pereira sử dụng các công cụ honeypot để đặc trưng hóa các cuộc tấn công vào hệ quản trị CSDL quan hệ và báo cáo rằng MySQL là hệ thống bị nhắm mục tiêu nhiều nhất trong số các hệ thống được khảo sát [rocha_what_2025]. Nghiên cứu kiểm thử các mồi nhử MySQL, PostgreSQL và Oracle, khẳng định tầm quan trọng của việc đo lường an ninh chuyên biệt cho từng loại DBMS.
+Rocha và Pereira dùng honeypot để khảo sát tấn công vào DBMS quan hệ, báo cáo MySQL là hệ thống bị nhắm nhiều nhất trong số các nền tảng được nghiên cứu [Rocha & Pereira]. Kết quả nhấn mạnh giá trị của quan sát chuyên biệt theo DBMS; mức độ phổ biến của mục tiêu chỉ đúng trong phạm vi triển khai của bài báo.
 
-Wegerer và Tjoa khảo sát các honeypot CSDL cùng kỹ thuật honeytoken, đồng thời mô tả một honeypot MySQL xây dựng từ các thành phần mã nguồn mở kết hợp plugin kiểm toán để ghi nhận truy vấn và các lượt đăng nhập [wegerer_defeating_2016]. Công trình này khẳng định cơ chế kiểm toán CSDL là trọng tâm thiết kế cốt lõi của một honeypot CSDL, mặc dù giải pháp plugin kiểm toán của MySQL không thể áp dụng nguyên trạng cho PostgreSQL.
+Wegerer và Tjoa trình bày khái niệm honeypot cơ sở dữ liệu, honeytoken và triển khai MySQL bằng công cụ mã nguồn mở [Wegerer & Tjoa]. Công trình cho thấy audit DB là yếu tố thiết kế quan trọng, nhưng plugin cụ thể cho MySQL không thể áp dụng nguyên trạng cho PostgreSQL.
 
-Các nghiên cứu chuyên sâu về honeypot PostgreSQL và MS SQL xác định các tương tác sau xác thực (post-authentication) là đối tượng thu thập trọng tâm. Al Hafidz et al. nghiên cứu nâng cao khả năng phát hiện trong honeypot shell PostgreSQL thông qua cơ chế phản hồi truy vấn tương tác [al_hafidz_enhancing_2025]. Karo Karo et al. nghiên cứu thu thập hành vi sau đăng nhập trên honeypot MS SQL bằng relay TDS nhận biết giao thức [karo_karo_capturing_2025]. Cả hai công trình đều chứng minh rằng những gì diễn ra sau khi kẻ tấn công đăng nhập thành công là bài toán thu thập trung tâm, trực tiếp dẫn dắt câu hỏi nghiên cứu RQ1.
+Các nghiên cứu mới hơn hướng đến deception thích ứng. Mirage là môi trường mô phỏng/emulation để thử deception trước đối thủ tự động dùng tìm kiếm và lập kế hoạch [Kouremetis et al.]. D3O-IIoT dùng học tăng cường sâu để phối hợp honeypot, moving-target defense và telemetry giả trong IIoT [Wushishi et al.]. Đây là bối cảnh cho hướng phát triển tương lai, nhưng khác phạm vi honeypot truy vấn DB của project.
 
-Gómez-López et al. giới thiệu SQLiAgent, một framework đa tác tử kiểm thử SQL Injection có chế độ hậu khai thác (post-exploitation) hỗ trợ bởi LLM nhằm giải thích schema CSDL, xác định các bảng chứa thông tin xác thực và sinh các câu lệnh SQL leo thang đặc quyền [gomez-lopez_multi-agent_2026]. Mặc dù mang tính tấn công, công trình này tài liệu hóa chi tiết các hành vi thực tế mà kịch bản Credential Access và Privilege Escalation của đề tài cần mô phỏng. Nghiên cứu cũng chứng minh rằng các công cụ hỗ trợ bởi LLM hoàn toàn có thể tự động sinh các truy vấn khai thác phức tạp từ cấu trúc schema suy luận được.
+## 2.3. Audit logging và tái dựng kịch bản tấn công
 
-## 2.3. Ghi log kiểm toán, phân tích phiên và tái dựng tấn công
+Zimniak, Getta và Benn phân tích audit trail để khám phá mẫu tuần hoàn trong workload cơ sở dữ liệu [Zimniak et al.]. Dù mục tiêu là dự báo workload chứ không phát hiện tấn công, nghiên cứu cho thấy cần giữ thứ tự và thời điểm của sự kiện khi phân tích chuỗi thao tác.
 
-Dấu vết kiểm toán (audit trails) cơ sở dữ liệu cung cấp các bản ghi có cấu trúc hỗ trợ phân tích vượt trội so với việc kiểm tra từng truy vấn đơn lẻ. Zimniak, Getta và Benn chuyển đổi dữ liệu audit-trail CSDL để khám phá các mẫu định kỳ trong tải công việc (workload) [zimniak_predicting_2015]. Công trình này tập trung vào dự báo hiệu năng thay vì phát hiện an ninh, nhưng đã chứng minh rõ giá trị của việc bảo toàn thứ tự thời gian và cấu trúc khi phân tích chuỗi thao tác CSDL.
+Biswas và Niemi chỉ ra rằng log không đủ sẽ cản trở audit, còn ghi dư tạo chi phí và overhead [Biswas & Niemi]. Điều này hỗ trợ việc đo đồng thời độ bao phủ, độ đầy đủ trường, dung lượng và độ trễ ở RQ1. Zeng, Xiao và Chen cũng đánh giá overhead và khả năng điều chỉnh auditing trên Linux, củng cố việc xem chi phí instrumentation là một phần của đánh giá [Zeng et al.].
 
-Biswas và Niemi xem xét các yêu cầu kiểm toán quyết định những loại log CSDL nào bắt buộc phải thu thập [biswas_transforming_2011]. Họ chỉ ra sự đánh đổi thực tiễn: ghi log không đủ sẽ cản trở việc kiểm toán tin cậy, trong khi ghi log dư thừa làm tăng chi phí lưu trữ và gây suy giảm hiệu năng CSDL. Luận điểm này là cơ sở trực tiếp cho việc so sánh 4 cấu hình log trong đề tài qua độ bao phủ hành động, độ đầy đủ trường, dung lượng log và độ trễ truy vấn. Zeng, Xiao và Chen nghiên cứu chi phí kiểm toán và khả năng thích ứng trong framework kiểm toán Linux, đề xuất cơ chế log thích ứng thay đổi kiểu sự kiện và tần suất theo các chuẩn bảo mật (CAPP, EAL, LSPP) [zeng_auditing_2015]. Công trình chỉ ra rằng chi phí kiểm toán không cố định mà phụ thuộc trực tiếp vào việc lựa chọn sự kiện ghi log.
+SLEUTH tái dựng kịch bản tấn công từ audit data bằng đồ thị phụ thuộc và phân tích nguồn/ảnh hưởng [Hossain et al.]. TraceBack khai thác provenance graph, quan hệ nhân quả và thứ tự để tái dựng kịch bản [Zhu et al.]. Các hệ thống này không tập trung vào log truy vấn DB, nhưng hỗ trợ ý tưởng xem sự kiện như các bước có phụ thuộc. Project dùng liên kết phụ thuộc trong kịch bản làm ground truth để đánh giá tái dựng phiên và lựa chọn bằng chứng.
 
-Choi và Lee phân tích pháp y kỹ thuật số trên transaction log của SQL Server nằm trong vùng chưa phân bổ của hệ thống tệp [choi_forensic_2023]. Kết quả cho thấy log mức câu lệnh và transaction ghi nhận chi tiết các bước truy vấn và thay đổi trạng thái, đóng vai trò sống còn trong điều tra số. Goseva-Popstojanova et al. phân tích đặc trưng các phiên web độc hại từ honeypot tương tác cao và chứng minh rằng thời lượng phiên và số lượng request tuân theo phân phối đuôi nặng (Pareto) [goseva-popstojanova_characterization_2014]. Điều này hàm ý rằng việc gom phiên logic dựa trên ngưỡng thời gian không hoạt động sẽ phải đối mặt với sự phân tán lớn giữa các phiên ngắn và các phiên kéo dài.
+Choi và Lee phân tích transaction log của SQL Server trong vùng chưa cấp phát của hệ thống file để phục vụ pháp chứng [Choi & Lee]. Kết quả của họ nhắc rằng quan hệ giữa câu truy vấn và bản ghi log không nhất thiết là một-một; parser không nên giả định mọi truy vấn sinh đúng một bản ghi. Tuy nhiên, nghiên cứu tập trung SQL Server, không trực tiếp mô tả logging PostgreSQL.
 
-Hossain et al. phát triển hệ thống SLEUTH nhằm tái dựng kịch bản tấn công thời gian thực từ log kiểm toán hệ thống COTS dựa trên đồ thị phụ thuộc lưu trong bộ nhớ [hossain_sleuth_nodate]. Bằng cách áp dụng lan truyền nhãn (tag propagation) theo hai chiều phân tích ngược (backward) và phân tích xuôi (forward), SLEUTH trích xuất chính xác nguồn gốc và tác động của cuộc tấn công. Phương pháp này cung cấp nền tảng toán học trực tiếp cho định nghĩa ground truth bằng chứng của đề tài: lần ngược chuỗi phụ thuộc nhân quả giữa các câu truy vấn. Zhu et al. giới thiệu TraceBack giải quyết bài toán bùng nổ phụ thuộc (dependency explosion) khi tái dựng tấn công APT từ đồ thị provenance [zhu_traceback_nodate], kết hợp lọc nhân quả trên POI và mô hình chuỗi để loại bỏ các nhánh nhiễu. Công trình này chứng minh tại sao cần phải đo lường và kiểm soát hiện tượng LLM bịa đặt mã bằng chứng không có quan hệ phụ thuộc thực tế.
+## 2.4. IDS, học máy và diễn giải bằng LLM
 
-## 2.4. Diễn giải và ánh xạ kỹ thuật dựa trên LLM
+Liu và Lang tổng quan ML/DL cho IDS, gồm thuật toán, bộ dữ liệu và vấn đề như false alarm, độ chính xác và phát hiện tấn công mới [Liu & Lang]. Alharthi, Alaryani và Kaddoura so sánh các mô hình trên bộ dữ liệu nhị phân và đa lớp, cho thấy mô hình tốt nhất phụ thuộc dữ liệu và nhiệm vụ [Alharthi et al.]. Hai nghiên cứu hỗ trợ chọn macro-F1, kết quả theo lớp và baseline minh bạch; các điểm số từ dữ liệu mạng/ICS không thể chuyển thẳng sang log SQL.
 
-Schärmer et al. đánh giá ChatGPT và Gemini trong bài toán phân loại cảnh báo IDS và nhận thấy việc cung cấp ví dụ few-shot cùng mô tả ngữ cảnh hệ thống giúp nâng cao hiệu quả phân loại, đồng thời cảnh báo về chi phí và tính ổn định [afzal_let_2027]. Meng et al. đề xuất framework RHINO ánh xạ log mạng sang các kỹ thuật MITRE ATT&CK [meng_rhino_2025], chứng minh rằng phân loại trực tiếp một bước bằng LLM thường suy diễn sai hoặc mất ngữ cảnh, do đó cần quy trình suy luận có hướng dẫn dựa trên bằng chứng.
+Rehman và cộng sự chuyển flow mạng thành văn bản ngắn, thử zero-shot/few-shot, ràng buộc định dạng đầu ra và hiệu chỉnh ngưỡng [Rehman et al.]. Kết quả nhạy với prompt, đặc trưng và quy mô tập đánh giá; baseline dạng bảng ổn định hơn trong thí nghiệm. Mehavilla và cộng sự so sánh LLM với ML/DL trên Zeek logs, báo cáo XGBoost đạt 96,96% F1 và dùng ít tài nguyên CPU hơn các LLM được thử [Mehavilla et al.]. Điều này nhắc rằng LLM không mặc nhiên là lựa chọn tốt hơn cho phân loại dữ liệu có cấu trúc.
 
-Wang et al. nghiên cứu nhận diện đa nhãn kỹ thuật tấn công dạng zero-shot bằng LLM thông qua khám phá bằng chứng ngữ nghĩa [wang_toward_2026]. Yang et al. đề xuất APTREC nhận diện chiến thuật và kỹ thuật APT dựa trên mô hình ngôn ngữ lớn [yang_aptrec_2026]. Meng et al. xây dựng benchmark CYBERTEAM chuẩn hóa các tác vụ săn lùng mối đe dọa (threat hunting) của Blue Team [meng_benchmarking_2026], chỉ ra rằng việc chuẩn hóa quy trình phân tích thành các module có cấu trúc giúp LLM hoạt động tin cậy hơn so với suy luận tự do. Landauer et al. phát triển bộ dữ liệu CAM-LDS ánh xạ các biểu hiện tấn công trong log hệ thống theo MITRE ATT&CK [landauer_cam-lds_2026], nhấn mạnh rằng nhiều hành vi tấn công riêng lẻ (như khám phá hệ thống) có biểu hiện y hệt hành vi quản trị thông thường nếu không được đặt trong ngữ cảnh toàn chuỗi.
+Schärmer và cộng sự đánh giá LLM diễn giải cảnh báo IDS, phân biệt cảnh báo tấn công với false positive và ánh xạ kỹ thuật tấn công [Schärmer et al.]. Họ xem xét tác động của log, cấu hình hệ thống và ví dụ few-shot. RHINO dùng suy luận có hướng dẫn để ánh xạ log mạng sang tactic/technique và nhấn mạnh kiểm chứng bằng chứng [Meng et al.]. CYBERTEAM chuẩn hóa threat hunting thành các tác vụ và mô-đun vận hành, báo cáo cấu trúc hóa quy trình giúp cải thiện so với một số kiểu suy luận mở [Meng et al.]. Những nghiên cứu này gợi ý kiểm tra xem ngữ cảnh có cải thiện phân loại truy vấn và liệu bằng chứng được chọn có thực sự được log hỗ trợ.
 
-## 2.5. Máy học cổ điển và LLM trên dữ liệu an ninh có cấu trúc
+APTREC nhận diện tactic/technique từ đồ thị tấn công theo kiến trúc hai giai đoạn; bài báo báo cáo cải thiện F1 và recall so với các phương pháp đối chiếu [Yang et al.]. Wang và cộng sự khảo sát nhận diện đa nhãn zero-shot với khám phá bằng chứng ngữ nghĩa [Wang et al.]. Đây là các hướng liên quan đến việc nối nhãn với bằng chứng, nhưng đầu vào đồ thị khác cửa sổ SQL của project.
 
-Liu và Lang khảo cứu toàn diện các phương pháp máy học và học sâu cho hệ thống phát hiện xâm nhập (IDS) [liu_machine_2019]. Alharthi, Alaryani và Kaddoura so sánh thực nghiệm các mô hình ML và DL trong phân loại nhị phân và đa lớp trên tập dữ liệu UNSW-NB15, thảo luận kỹ về sự mất cân bằng giữa các lớp tấn công và nguyên tắc phân chia dữ liệu huấn luyện [alharthi_comparative_2025].
+Neves và cộng sự so sánh LLM zero-shot với phương pháp dựa trên luật cho phân loại kiểu hình lâm sàng từ tóm tắt bệnh nhân tổng hợp [Neves et al.]. Nghiên cứu cho thấy hai phương pháp có thể có điểm mạnh bổ sung: luật có precision cao nhưng recall thấp, còn LLM đạt cân bằng khác. Đây là phép so sánh gần về thiết kế với RQ2, nhưng lĩnh vực lâm sàng khác an ninh DB.
 
-Rehman et al. đánh giá LLM zero-shot và few-shot trên dữ liệu luồng mạng bằng cách chuyển đổi bản ghi thành văn bản (flows-to-words), bổ sung cờ logic, áp dụng ngữ pháp GBNF ràng buộc đầu ra JSON và hiệu chuẩn ngưỡng quyết định trên tập dev [rehman_flows_2025]. Kết quả cho thấy mô hình 7B có cờ logic đạt macro-F1 xấp xỉ 0.78, nhưng chất lượng quyết định suy giảm khi kích thước tập kiểm thử tăng lên. Mô hình truyền thống ổn định và nhanh hơn, nhưng LLM thích ứng linh hoạt mà không cần huấn luyện lại trọng số. Mehavilla et al. tiến hành benchmark hệ thống các LLM độc lập (LLaMA-3.2-1B, GPT-2, GPT-Neo-125M) trên dữ liệu luồng mạng so sánh với Random Forest, XGBoost và MLP [mehavilla_evaluating_2026]. Nghiên cứu chỉ ra chi phí suy luận khổng lồ của LLM và độ nhạy cảm cao trước mất cân bằng lớp. Neves et al. so sánh LLM zero-shot với phương pháp dựa trên luật trong trích xuất kiểu hình lâm sàng [neves_zero-shot_2025], cho thấy hệ luật vượt trội hơn hẳn LLM không qua tinh chỉnh khi xử lý các định dạng miền hẹp.
+Duan và cộng sự tổng quan few-shot learning cho phát hiện xâm nhập trong bối cảnh dữ liệu có nhãn hạn chế [Duan et al.]. Project dùng few-shot prompting với mô hình cố định, không đề xuất thuật toán few-shot learning mới; vì vậy tài liệu này là nền tảng khái niệm.
 
-## 2.6. Khái quát hóa sang hành vi tấn công chưa biết
+## 2.5. Khái quát hóa sang hành vi tấn công chưa gặp
 
-Duan et al. khảo cứu các phương pháp Few-Shot Learning (FSL) trong phát hiện xâm nhập mạng [duan_survey_2021], phân tích các hướng tiếp cận theo mô hình, độ đo và tối ưu hóa nhằm thích ứng với các cuộc tấn công mới lạ khi có rất ít mẫu huấn luyện. Lust et al. khảo cứu không gian khái quát hóa của mạng nơ-ron trước các mẫu ngoài phân phối (out-of-distribution - OOD) và mẫu đối kháng [lust_survey_2026]. 
+Lust và Condurache tổng quan các hướng đánh giá khả năng khái quát hóa mạng nơ-ron, gồm bất định dự đoán, phát hiện ngoài phân phối và ví dụ đối kháng [Lust & Condurache]. Zhou và Wang đề xuất GROD để cải thiện khả năng khái quát hóa ngoài phân phối của transformer bằng outlier tổng hợp [Zhou & Wang]. GROD hướng đến huấn luyện mạng, không áp dụng trực tiếp cho LLM prompting, nhưng cho thấy cần đo riêng hiệu năng trên dữ liệu lệch phân phối.
 
-Zhou et al. đề xuất giải thuật GROD nhằm nâng cao khả năng khái quát hóa của Transformer thông qua phát hiện OOD [zhou_grod_2024], tích hợp cơ chế sinh dữ liệu ngoại lai tổng hợp để phạt các phân loại sai ngoài phân phối. Guo, Wildberger và Schölkopf nghiên cứu bài toán khái quát hóa ngoài biến số (out-of-variable generalization) khi tập thuộc tính quan sát trong kiểm thử thay đổi so với khi huấn luyện [guo_out--variable_2024]. Những nghiên cứu này là cơ sở lý thuyết để đề tài thiết kế bài kiểm tra RQ3: đo lường mức độ suy giảm hiệu năng khi mô hình đối mặt với các họ kỹ thuật bị cách ly hoàn toàn khỏi quá trình xây dựng prompt và luật.
+Das và Nair công bố bộ dữ liệu xâm nhập nhà thông minh với bảy kịch bản tấn công nhiều giai đoạn [Das & Nair]. Dù thuộc dữ liệu mạng, nghiên cứu minh họa nhu cầu có kịch bản và nhãn nhiều bước. Project sẽ tự tạo các kịch bản truy vấn có quan hệ phụ thuộc và mô tả cách sinh để có ground truth tái lập.
 
-## 2.7. Tính chân thực của Honeypot, Dữ liệu mồi nhử tổng hợp và Đánh giá
+## 2.6. Tính chân thực và đánh giá honeypot
 
-Nunez Migliorisi đề xuất khung chỉ số thực nghiệm dựa trên viễn trắc (dwell time, interaction depth) để đánh giá tính chân thực và hiệu quả đánh lừa của honeypot [noelia_nunez_migliorisi_empirical_2026]. Ferguson-Walter et al. công bố nghiên cứu thực nghiệm Tularosa trên hơn 130 red teamer, chứng minh rằng sự hiện diện của decoy làm chậm đáng kể tiến trình tấn công và khiến đối thủ tiêu tốn tài nguyên gấp nhiều lần [ferguson-walter_examining_nodate]. Shahin et al. mô hình hóa chiến lược đánh lừa dưới góc độ lý thuyết trò chơi và rò rỉ thông tin [shahin_evaluating_2026]. Zambianco et al. xây dựng mô hình lựa chọn decoy chủ động dựa trên MITRE ATT&CK [zambianco_proactive_2025]. Das và Nair công bố bộ dữ liệu tấn công đa giai đoạn sử dụng MITRE Caldera [das_novel_2026].
+Nunez Migliorisi đề xuất đo realism và hiệu quả deception qua thời gian đối phương lưu lại, độ sâu tương tác, độ đa dạng hành vi và độ phong phú malware; số lượng kết nối đơn thuần chưa đủ [Nunez Migliorisi]. Ferguson-Walter và Major đánh giá deception qua tiến triển của đối phương, tài nguyên tiêu tốn và thay đổi nhận thức [Ferguson-Walter & Major]. Các chỉ số này có thể bổ sung cho việc đánh giá honeypot, dù project tập trung chính vào khả năng quan sát log và chất lượng phân tích trong kịch bản kiểm soát.
 
-Về dữ liệu mồi nhử, Weinberg giới thiệu mô hình PHANTOM sinh honeytoken đa hình thích ứng với ngữ cảnh tổ chức [weinberg_phantom_2026], phân rã điểm đánh giá theo cú pháp, thống kê và ngữ nghĩa. Cơ chế này định hướng cho việc kiểm tra tính tự nhiên của các bảng nhạy cảm giả lập trong đề tài. Ngược lại, Msaad et al. chỉ ra rằng kẻ tấn công nâng cao có thể nhận diện hầu hết các honeytoken mã nguồn mở hiện nay mà không kích hoạt cảnh báo [reiser_honeysweeper_2022], một hạn chế mà đề tài cần thừa nhận.
+PHANTOM tạo honeytoken theo ngữ cảnh tổ chức và đánh giá tính đáng tin qua hợp lệ cú pháp, nhất quán ngữ nghĩa, hợp lý thống kê và chấp nhận của người đánh giá [Weinberg]. Honeysweeper cho thấy honeytoken phổ biến có thể bị fingerprint mà không kích hoạt cảnh báo [Msaad et al.]. Các nghiên cứu này gợi ý cần kiểm tra tính hợp lý của dữ liệu mồi, nhưng project không tuyên bố dữ liệu giả không thể bị nhận diện.
 
-Về xu hướng tích hợp AI vào đánh lừa mạng, Kouremetis et al. giới thiệu Mirage thử nghiệm đánh lừa chống lại các tác nhân tấn công tự động [kouremetis_mirage_2024]. Wushishi et al. đề xuất D3O-IIoT điều phối bẫy động bằng học tăng cường sâu [wushishi_d3o-iiot_2025]. Safargalieva et al. phát triển honeypot đa giao thức OHRA điều khiển bởi LLM [safargalieva_ohra_nodate]. Cuối cùng, Bridges et al. hệ thống hóa toàn diện mối quan hệ giữa Honeypot và LLM (SoK) [bridges_sok_2026], cung cấp phân loại 4 giai đoạn tiến hóa của phân tích log honeypot, chỉ ra kiến trúc chuẩn tắc và nhấn mạnh sự khan hiếm trầm trọng của dữ liệu gán nhãn thực tế.
+Bridges và cộng sự tổng hợp nghiên cứu honeypot kết hợp LLM, gồm vector fingerprint, kiến trúc, phân tích log và tiêu chí đánh giá như tính đáng tin, fidelity, mức tương tác và chi phí bên phòng thủ [Bridges et al.]. Họ nhấn mạnh thiếu dữ liệu thực tế có nhãn và nguy cơ đối thủ thông minh nhận ra phản hồi LLM. Project dùng LLM để phân tích trace chứ không sinh phản hồi PostgreSQL, nên fidelity phản hồi không phải chỉ số chính; tuy vậy cần đánh giá đầu ra tường minh và không xem lời giải thích của LLM là bằng chứng tự xác thực.
 
-## 2.8. Tóm tắt tổng quan tài liệu
+## 2.7. Tổng hợp tài liệu
 
-Các nghiên cứu honeypot CSDL cho thấy mồi nhử chuyên biệt cho DBMS có thể thu hút các nỗ lực xác thực kéo dài và bộc lộ hành vi khai thác sâu nhiều bước, trong đó mức tương tác và cơ chế thu thập quyết định trực tiếp dữ liệu ghi nhận được [song_decoy_2025, al_hafidz_enhancing_2025, karo_karo_capturing_2025]. Các nghiên cứu audit trail và tái dựng tấn công khẳng định thứ tự sự kiện, thời gian, quan hệ phụ thuộc và độ phủ trường thông tin là tối quan trọng, đồng thời xác định chi phí ghi log là yếu tố đánh đổi phải đo lường [biswas_transforming_2011, zeng_auditing_2015, choi_forensic_2023]. Nghiên cứu ứng dụng LLM trong an ninh cung cấp các chiến lược prompt theo ngữ cảnh, thiết kế định hướng bằng chứng và quy trình đánh giá chuẩn mực, nhưng các kết quả trên luồng mạng hay cảnh báo IDS chưa thể áp dụng trực tiếp cho chuỗi truy vấn SQL [afzal_let_2027, meng_rhino_2025, neves_zero-shot_2025, rehman_flows_2025]. Các nghiên cứu về khái quát hóa thúc đẩy việc cách ly các họ kỹ thuật mới thay vì chia ngẫu nhiên [lust_survey_2026], và nghiên cứu đánh giá honeypot khẳng định mức độ tương tác đòi hỏi nhiều hơn là việc chỉ đếm số kết nối thô [noelia_nunez_migliorisi_empirical_2026, ferguson-walter_examining_nodate].
+Các nghiên cứu honeypot DB cho thấy decoy chuyên biệt có thể quan sát cả nỗ lực xác thực kéo dài lẫn khai thác nhiều bước; mức tương tác và cơ chế ghi log quyết định loại hành vi có thể thu được. Nghiên cứu audit trail và tái dựng tấn công nhấn mạnh thứ tự, thời gian, phụ thuộc và độ đầy đủ trường, đồng thời lưu ý overhead của logging. Nghiên cứu IDS/LLM cung cấp baseline, cách dùng ngữ cảnh, đầu ra có cấu trúc và tiêu chí đánh giá; nhưng kết quả trên flow mạng, cảnh báo hoặc văn bản lâm sàng chưa chứng minh hiệu năng trên truy vấn SQL. Đánh giá honeypot cũng cần xem xét độ sâu tương tác và realism thay vì chỉ đếm kết nối.
 
-Tuy nhiên, vẫn còn một khoảng trống nghiên cứu rõ rệt tại giao điểm của các lĩnh vực trên: Các tài liệu hiện có chưa làm rõ **cấu hình ghi log PostgreSQL nào là đủ để tái dựng các phiên truy vấn có nhãn trong một honeypot có kiểm soát**, và liệu **mô hình ngôn ngữ lớn few-shot chạy cục bộ có thực sự cải thiện độ chính xác phân loại giai đoạn truy vấn và chất lượng bằng chứng so với phương pháp dựa trên luật khi đánh giá trên các họ kỹ thuật bị cách ly hay không**. Đề tài này giải quyết trực tiếp khoảng trống đó bằng một pipeline thực nghiệm nhất quán và có thể tái lập.
+Khoảng trống nằm ở giao điểm các hướng này: tài liệu hiện có chưa xác định cấu hình logging PostgreSQL nào đủ để tái dựng phiên truy vấn có nhãn trong honeypot kiểm soát, cũng chưa cho biết LLM few-shot cục bộ có cải thiện phân loại giai đoạn và lựa chọn bằng chứng so với luật khi kiểm tra trên các họ kỹ thuật bị giữ lại hay không. Project lấp khoảng trống này bằng một pipeline thống nhất đánh giá độ bao phủ, tái dựng phiên, phân loại, chất lượng bằng chứng và khái quát hóa. Kết luận chỉ áp dụng cho cấu hình và kịch bản được thử nghiệm.
 
-## 2.9. Đóng góp nghiên cứu của đề tài
+## 2.8. Đóng góp của nghiên cứu
 
-Đóng góp dự kiến của đề tài là một đánh giá thực nghiệm toàn diện và có thể tái lập trên honeypot PostgreSQL cục bộ cùng pipeline phân tích hành vi tích hợp AI:
+Các đóng góp dự kiến:
 
-* **C1:** So sánh định lượng 4 cấu hình ghi log định trước (C0–C3) thông qua recall hành động theo nhóm, độ đầy đủ của các trường sự kiện bắt buộc, dung lượng log sinh ra và độ trễ truy vấn tăng thêm.
-* **C2:** Đo lường độ chính xác của việc tái dựng phiên truy vấn qua các ngưỡng thời gian không hoạt động (1, 5, 15, 30 phút) so với kịch bản ground truth có quan hệ phụ thuộc tường minh.
-* **C3:** So sánh thực nghiệm bộ phân loại dựa trên luật với mô hình LLM few-shot chạy cục bộ trên cùng các cửa sổ ngữ cảnh truy vấn, báo cáo macro-F1, F1 từng lớp, tỉ lệ output sai định dạng, tỉ lệ ID bằng chứng bịa, cùng precision, recall và F1 của bằng chứng.
-* **C4:** Đánh giá độ bền vững và khả năng khái quát hóa của hai phương pháp trên các họ kỹ thuật tấn công mới được cách ly hoàn toàn khỏi quá trình xây dựng luật và prompt.
+1. So sánh bốn cấu hình logging PostgreSQL theo action-level recall, độ đầy đủ trường, dung lượng log và độ trễ truy vấn.
+2. Đánh giá tái dựng phiên theo nhiều ngưỡng không hoạt động, đối chiếu với kịch bản có nhãn và phụ thuộc tường minh.
+3. So sánh bộ phân loại dựa trên luật với LLM few-shot cục bộ trên cùng cửa sổ truy vấn; báo cáo macro-F1, hiệu năng theo lớp, đầu ra không hợp lệ và precision/recall/F1 của bằng chứng.
+4. Kiểm tra khái quát hóa trên các họ kỹ thuật tấn công được loại khỏi quá trình xây luật và prompt.
+
+Đây là đóng góp dự kiến của thiết kế và triển khai nghiên cứu, chưa phải kết quả thực nghiệm. Mục tiêu là xác định các đánh đổi quan sát được trong môi trường kiểm soát và tạo nền tảng cho mở rộng sau này.
+
+# Chương 3. Phương pháp
+
+## 3.1. Thiết kế nghiên cứu
+
+Nghiên cứu là đánh giá định lượng trong môi trường kiểm soát, gồm ba thí nghiệm tương ứng RQ1–RQ3. RQ1 đo khả năng ghi nhận hành động và tái dựng phiên của bốn cấu hình PostgreSQL. RQ2 so sánh luật với LLM few-shot cục bộ về phân loại giai đoạn truy vấn và chọn bằng chứng. RQ3 đo mức suy giảm hiệu năng trên các họ kỹ thuật bị loại khỏi phát triển.
+
+Pipeline chung gồm sáu bước: (1) bộ sinh kịch bản tạo chuỗi truy vấn tấn công/bình thường cùng nhãn và phụ thuộc; (2) chạy kịch bản trên honeypot cục bộ theo cấu hình logging; (3) phân tích log vào schema sự kiện chung; (4) nhóm phiên cho RQ1; (5) tạo cửa sổ truy vấn và phân loại cho RQ2/RQ3; (6) so sánh dự đoán với ground truth bằng các metric đã định nghĩa.
+
+## 3.2. Môi trường honeypot và cấu hình logging
+
+Honeypot là PostgreSQL chạy trong Docker trên máy cục bộ, không mở ra mạng công cộng. Cơ sở dữ liệu chứa dữ liệu giả, gồm bảng mồi có tên và nội dung giống các bản ghi nhạy cảm như tài khoản và thanh toán. Không dùng dữ liệu cá nhân/tổ chức thật.
+
+Bốn cấu hình logging được so sánh: C0 ghi mọi câu lệnh; C1 bật pgAudit session logging; C2 bổ sung log kết nối, ngắt kết nối, lỗi câu lệnh và tham số; C3 dùng proxy hoặc packet capture nếu kịp triển khai. Bản ghi được chuẩn hóa về timestamp, user, IP nguồn, database, câu lệnh, trạng thái kết quả và tham số. Trường không được cấu hình ghi nhận sẽ để thiếu, không suy diễn.
+
+## 3.3. Kịch bản, dữ liệu và gán nhãn
+
+Bộ sinh Python tạo phiên tấn công và phiên bình thường từ các template. Mỗi bước có nhãn, mã định danh và danh sách `depends_on` chỉ các bước trước có kết quả được sử dụng. Quan hệ này tạo ground truth bằng chứng. Bộ sinh thay đổi tên bảng/cột, thứ tự khi phù hợp, công cụ/client, giá trị literal và thời gian giữa truy vấn. ID bước chỉ lưu trong ground truth, không chèn vào SQL hay đầu vào mô hình.
+
+Bảy nhãn gồm Discovery, Credential Access, Privilege Escalation, Collection, Exfiltration, Impact và Noise. Ví dụ: truy vấn catalog là Discovery; đọc bảng credential là Credential Access; `GRANT`/`ALTER USER` là Privilege Escalation; đọc dữ liệu nhạy cảm hàng loạt là Collection; `COPY ... TO` là Exfiltration; `DROP`, `UPDATE`, `DELETE` và `COPY ... FROM PROGRAM` là Impact; truy vấn ứng dụng bình thường là Noise. Quy tắc gán nhãn được chốt trước khi sinh dữ liệu; tình huống mơ hồ được ghi lại.
+
+Các kịch bản chia thành họ theo kỹ thuật và mục tiêu. Họ đã biết dùng để phát triển luật và prompt. Hai hoặc ba họ giữ lại do thành viên không viết luật/prompt tạo, được cố định trước khi phát triển. Phiên Noise được trộn vào các thí nghiệm.
+
+## 3.4. Thu thập dữ liệu
+
+### Dữ liệu RQ1
+
+Mỗi biến thể kịch bản chạy dưới cả bốn cấu hình để so sánh trực tiếp. Runner phía client ghi câu lệnh, thời điểm gửi, ID kết nối và ID bước làm ground truth đối chiếu. Parser chuyển log vào schema chung. Overhead đo bằng số byte log trên phiên và độ trễ mỗi câu lệnh, có/không bật từng cấu hình, cùng phần cứng. Mỗi phép đo lặp lại; báo cáo median và khoảng tứ phân vị.
+
+### Dữ liệu RQ2/RQ3
+
+Tập phân loại gồm 100 truy vấn có nhãn từ các họ đã biết và Noise, thu dưới cấu hình C2 để có đủ sáu thuộc tính. Nếu RQ1 chọn cấu hình nhẹ hơn, RQ2 được chạy lại như kiểm tra độ nhạy. Trước phân loại, literal được thay bằng placeholder kiểu dữ liệu như `<STR>` và `<NUM>`; tên bảng/cột được đổi riêng theo từng kịch bản để tránh mô hình học thuộc tên. SQL gốc giữ trong ground truth; mô hình nhận phiên bản chuẩn hóa.
+
+## 3.5. Chia tập dữ liệu
+
+Dữ liệu được chia bằng `StratifiedGroupKFold` của scikit-learn với 3 fold, shuffle bật và seed 42. Nhóm là phiên hoặc ID kịch bản để mọi truy vấn trong một phiên nằm cùng fold; nhãn được dùng để giữ phân bố lớp gần cân bằng. Một fold khoảng một phần ba làm test kín; phần còn lại dùng phát triển/huấn luyện và một grouped split khác phục vụ tinh chỉnh.
+
+Với 100 truy vấn, test có khoảng 33 truy vấn cho bảy lớp, nên một số lớp sẽ có rất ít ví dụ. Tỷ lệ thực tế khoảng 67% phát triển và 33% test, thay vì 70/30 ban đầu; kết quả theo lớp cần được diễn giải thận trọng.
+
+## 3.6. Kỹ thuật phân tích
+
+### RQ1: độ bao phủ và tái dựng phiên
+
+Action recall cho lớp `g` và profile `p` được tính bằng số hành động trong lớp được phát hiện chia cho tổng số hành động lớp đó. Hành động chỉ tính là phát hiện nếu bản ghi khớp câu lệnh đã chạy sau chuẩn hóa và có đủ thuộc tính bắt buộc. Ví dụ, đăng nhập thất bại cần user, IP nguồn và trạng thái kết quả.
+
+Độ đầy đủ trường là tỷ lệ bản ghi có đủ sáu thuộc tính phiên. Sự kiện được nhóm theo IP nguồn, user và database; phiên mới bắt đầu khi khoảng cách giữa hai sự kiện vượt ngưỡng 1, 5, 15 hoặc 30 phút. Phiên khớp chính xác nếu chứa đúng tập hành động của phiên thật. Báo cáo session precision/recall/F1 và pairwise metrics để phản ánh lỗi gộp/tách phiên.
+
+Profile chỉ đủ điều kiện nếu đạt recall ít nhất 95% cho mọi lớp và đủ sáu thuộc tính phục vụ RQ2. Trong các profile đủ điều kiện, chọn profile có tổng chi phí dung lượng log và độ trễ thấp nhất. Nếu không profile nào đạt, chọn phương án tốt nhất hiện có và báo cáo thiếu hụt.
+
+### Bộ phân loại dựa trên luật
+
+Luật gán nhãn từng truy vấn bằng điều kiện trên cửa sổ truy vấn, có thể tham chiếu truy vấn hiện tại và truy vấn trước. Luật chỉ được tinh chỉnh trên fold phát triển. Đầu ra gồm nhãn dự đoán và ID truy vấn thỏa điều kiện; các ID là tập bằng chứng của luật.
+
+### Bộ phân loại LLM few-shot
+
+Mô hình dự kiến là Llama 3.1 8B Instruct chạy cục bộ qua Ollama, không fine-tune; nhiệt độ bằng 0. Ghi lại phiên bản model/Ollama và phần cứng. Prompt gồm vai trò, tập nhãn hợp lệ, schema JSON, 2–3 ví dụ few-shot chỉ lấy từ fold phát triển và cửa sổ truy vấn hiện tại cộng `k` truy vấn trước (`k` bằng 0, 2 hoặc 4). Đầu ra sai JSON hoặc nhãn ngoài danh sách được tính là không hợp lệ và là dự đoán sai; không retry.
+
+### Chỉ số đánh giá
+
+Phân loại báo cáo macro-F1, precision/recall/F1 theo lớp và ma trận nhầm lẫn. Độ tin cậy kỹ thuật gồm tỷ lệ đầu ra sai và tỷ lệ ID bằng chứng giả. Chất lượng bằng chứng đối chiếu tập ID dự đoán với tập ground truth gồm truy vấn đích và phụ thuộc nằm trong cửa sổ; báo cáo Jaccard, precision, recall, F1. Mẫu 20% được rà soát thủ công để ước lượng chất lượng ground truth. Hiệu năng theo `k` và thời gian suy luận cũng được ghi nhận.
+
+Khoảng tin cậy macro-F1/evidence-F1 được bootstrap theo phiên vì truy vấn trong cùng phiên phụ thuộc nhau. Hai phương pháp so sánh trên cùng test fold.
+
+### RQ3: họ kỹ thuật chưa gặp
+
+Mức suy giảm hiệu năng là hiệu năng trên họ đã biết trừ hiệu năng trên họ giữ lại, tính cho macro-F1 và evidence-F1. Báo cáo thêm F1 theo lớp, thay đổi tỷ lệ bằng chứng giả và mô tả độ mới cấu trúc SQL, mức chuyên biệt PostgreSQL và độ phức tạp phụ thuộc. Chỉ có 2–3 họ giữ lại nên quan hệ giữa các yếu tố mới và suy giảm chỉ mang tính mô tả.
+
+## 3.7. Hạn chế của phương pháp
+
+Tập dữ liệu nhỏ (100 truy vấn), khiến ước lượng theo lớp không ổn định. Hành vi tấn công tổng hợp phản ánh template của nhóm chứ không phải phân phối tấn công thực. Bảy nhãn không bao quát mọi hành vi PostgreSQL; ánh xạ trường hợp biên có thể ảnh hưởng kết quả. Hai hoặc ba họ giữ lại không đại diện mọi kỹ thuật chưa biết. LLM có thể không hoàn toàn tất định do phần cứng/thư viện; độ trễ và dung lượng phụ thuộc workload và máy chạy. Chấm novelty và rà soát bằng chứng có yếu tố chủ quan; báo cáo độ đồng thuận giữa người đánh giá.
+
+## 3.8. Khả năng tái lập và cân nhắc đạo đức
+
+Mã bộ sinh, parser, prompt, định nghĩa luật, seed ngẫu nhiên và chỉ số chia tập sẽ lưu trong repository có version control để tái tạo bảng/hình. Honeypot chỉ chứa dữ liệu giả, không mở ra mạng ngoài và không chạy malware thật. Bộ sinh chỉ tạo câu lệnh SQL; không sử dụng hạ tầng tấn công trực tiếp.
 
 ---
 
-## Tài liệu tham khảo
+## Tài liệu tham khảo được dùng trong bản dịch
 
-[song_decoy_2025] Y. Song, G. Smaragdakis, and H. Griffioen, "Decoy Databases: Analyzing Attacks on Public Facing Databases," in *Proc. 2025 ACM Internet Measurement Conf. (IMC '25)*, Oct. 2025, pp. 709–726, doi: 10.1145/3730567.3764481.
-
-[wegerer_defeating_2016] M. Wegerer and S. Tjoa, "Defeating the Database Adversary Using Deception—A MySQL Database Honeypot," in *Proc. 2016 Int. Conf. on Software Security and Assurance (ICSSA)*, Aug. 2016, pp. 6–10, doi: 10.1109/ICSSA.2016.8.
-
-[afzal_let_2027] A. Schärmer, M. Landauer, F. Skopik, M. Wurzenberger, and M. Squarcina, "Let the Alerts Speak: LLM-Based IDS Alert Interpretation for SOC Triage," in *Availability, Reliability and Security. ARES 2026 International Workshops*, ser. LNCS, vol. 16901, Cham: Springer, 2027, pp. 346–364, doi: 10.1007/978-3-032-35579-9_19.
-
-[meng_rhino_2025] F. Meng, J. Gui, Y. Li, and Y. Wu, "RHINO: Guided Reasoning for Mapping Network Logs to Adversarial Tactics and Techniques with Large Language Models," *arXiv:2510.14233 [cs.CR]*, Oct. 2025.
-
-[rocha_what_2025] A. Rocha and F. S. F. Pereira, "What is the most targeted database? Using Honeypots to Characterize Attacks on Relational Databases," *Procedia Computer Science*, vol. 256, pp. 114–121, 2025, doi: 10.1016/j.procs.2025.01.077.
-
-[al_hafidz_enhancing_2025] R. F. Al Hafidz, A. H. Muhammad, and F. J. P. S. D. Putra, "Enhancing Detection Postgresql Shell Honeypot with Interactive Query Response," in *2025 8th Int. Conf. on Vocational Education and Electrical Engineering (ICVEE)*, 2025, pp. 1–6.
-
-[karo_karo_capturing_2025] H. Karo Karo, A. H. Muhammad, and F. J. P. S. D. Putra, "Capturing Post-Login Behaviors in MS SQL Honeypots: Profiling Attackers via a Protocol-Aware TDS Relay," in *2025 6th Int. Conf. on Cybernetics and Computational Intelligence (CyberneticsCom)*, 2025, pp. 1–6.
-
-[gomez-lopez_multi-agent_2026] A. Gómez-López, M. J. Escalona, and J. A. García-García, "A Multi-Agent Framework for SQL Injection Auditing with LLM-Driven Post-Exploitation and Privilege Escalation," *Computers*, vol. 15, no. 1, p. 658, 2026, doi: 10.3390/computers15100658.
-
-[zimniak_predicting_2015] M. Zimniak, J. R. Getta, and W. Benn, "Predicting database workloads through mining periodic patterns in database audit trails," *Distributed and Parallel Databases*, vol. 33, no. 4, pp. 583–614, 2015, doi: 10.1007/s10619-014-7164-8.
-
-[biswas_transforming_2011] D. Biswas and V. Niemi, "Transforming Privacy Policies to Auditing Specifications," in *2011 IEEE 10th Int. Conf. on Trust, Security and Privacy in Computing and Communications*, 2011, pp. 627–634, doi: 10.1109/TrustCom.2011.83.
-
-[zeng_auditing_2015] L. Zeng, Y. Xiao, and H. Chen, "Auditing overhead, auditing adaptation, and benchmark evaluation in Linux," *Security and Communication Networks*, vol. 8, no. 18, pp. 3523–3534, 2015, doi: 10.1002/sec.1277.
-
-[choi_forensic_2023] H. Choi and S. Lee, "Forensic analysis of SQL server transaction log in unallocated area of file system," *Forensic Science International: Digital Investigation*, vol. 46, p. 301605, 2023, doi: 10.1016/j.fsidi.2023.301605.
-
-[goseva-popstojanova_characterization_2014] K. Goseva-Popstojanova, C. Veeramachaneni, and R. Singh, "Characterization and classification of malicious Web traffic," *Computers & Security*, vol. 42, pp. 92–115, 2014, doi: 10.1016/j.cose.2014.01.006.
-
-[hossain_sleuth_nodate] M. N. Hossain, S. Milajerdi, J. Wang, B. Eshete, R. Gjomemo, R. Sekar, S. Stoller, and V. Venkatakrishnan, "SLEUTH: Real-time Attack Scenario Reconstruction from COTS Audit Data," in *Proc. 26th USENIX Security Symp.*, Aug. 2017, pp. 487–504.
-
-[zhu_traceback_nodate] T. Zhu, M. Li, Z. Wang, W. Cheng, Q. Chen, J. Ren, and Z. Tian, "TraceBack: Sequence-Enhanced and Causality-Driven Attack Scenario Reconstruction from Provenance Graphs," *SSRN Electronic Journal*, 2025, doi: 10.2139/ssrn.5351687.
-
-[wang_toward_2026] J. Wang, S. Zhang, Y. Xiao, Y. Tan, and H. Wang, "Toward Zero-Shot Multi-Label Identification of Attack Techniques: Enhancing LLM Reasoning With Semantic Evidence Discovery," *IEEE Trans. on Information Forensics and Security*, vol. 38, pp. 1120–1134, 2026.
-
-[yang_aptrec_2026] K. Yang, S. Chen, H. Zhang, and X. Liu, "APTREC: APT tactic/technique recognition based on large language model," *Computers & Security*, vol. 280, p. 104112, 2026, doi: 10.1016/j.cose.2026.104112.
-
-[meng_benchmarking_2026] Y. Meng, L. Tang, F. Yu, X. Li, G. Yan, P. Yang, and Z. Xi, "Benchmarking LLM-Assisted Blue Teaming via Standardized Threat Hunting," *arXiv:2509.23571 [cs.CR]*, Sep. 2025.
-
-[landauer_cam-lds_2026] M. Landauer, M. Wurzenberger, F. Skopik, et al., "CAM-LDS: Cyber Attack Manifestations for Automatic Interpretation of System Logs and Security Alerts," *arXiv:2603.04186 [cs.CR]*, Mar. 2026.
-
-[liu_machine_2019] H. Liu and B. Lang, "Machine Learning and Deep Learning Methods for Intrusion Detection Systems: A Survey," *Applied Sciences*, vol. 9, no. 20, p. 4396, 2019, doi: 10.3390/app9204396.
-
-[alharthi_comparative_2025] A. Alharthi, M. Alaryani, and S. Kaddoura, "A comparative study of machine learning and deep learning models in binary and multiclass classification for intrusion detection systems," *Array*, vol. 26, p. 100406, 2025, doi: 10.1016/j.array.2025.100406.
-
-[rehman_flows_2025] M. A. Rehman, S. I. A. Shah, A. Anwar, and N. Islam, "From Flows to Words: Can Zero-/Few-Shot LLMs Detect Network Intrusions? A Grammar-Constrained, Calibrated Evaluation on UNSW-NB15," *arXiv:2510.17883 [cs.CR]*, Oct. 2025.
-
-[mehavilla_evaluating_2026] M. Mehavilla, R. A. Sukamto, and B. Hendradjaya, "Evaluating large language models effectiveness for flow-based intrusion detection: a comparative study with ML and DL baselines," *Artificial Intelligence Review*, vol. 59, p. 50, 2026, doi: 10.1007/s10462-025-11432-2.
-
-[neves_zero-shot_2025] M. Neves, A. Sousa, and P. Oliveira, "Zero-shot learning for clinical phenotyping: Comparing LLMs and rule-based methods," *Journal of Biomedical Informatics*, vol. 192, p. 104882, 2025, doi: 10.1016/j.jbi.2025.104882.
-
-[duan_survey_2021] R. Duan, D. Li, Q. Tong, T. Yang, X. Liu, and X. Liu, "A Survey of Few-Shot Learning: An Effective Method for Intrusion Detection," *Security and Communication Networks*, vol. 2021, p. 4259629, 2021, doi: 10.1155/2021/4259629.
-
-[lust_survey_2026] F. Lust, M. Schneider, and C. Reuter, "A survey on assessing the generalization area of neural networks: Uncertainty, out-of-distribution and adversarial samples," *Neurocomputing*, vol. 706, p. 129480, 2026, doi: 10.1016/j.neucom.2026.129480.
-
-[zhou_grod_2024] C. Zhou, Y. Chen, and L. Huang, "GROD: Enhancing Generalization of Transformer with Out-of-Distribution Detection," *arXiv:2408.01234 [cs.LG]*, 2024.
-
-[guo_out--variable_2024] S. Guo, J. Wildberger, and B. Schölkopf, "Out-of-Variable Generalization for Discriminative Models," *Transactions on Machine Learning Research*, 2024.
-
-[noelia_nunez_migliorisi_empirical_2026] T. N. Nunez Migliorisi, "Empirical Telemetry-Based Metrics for Evaluating Honeypot Realism and Deception Effectiveness," *Int. Journal of Network Security & Its Applications (IJNSA)*, vol. 18, no. 1, pp. 1–18, 2026, doi: 10.5121/ijnsa.2026.18101.
-
-[ferguson-walter_examining_nodate] K. J. Ferguson-Walter, M. M. Major, C. K. Johnson, and D. H. Muhleman, "Examining the Efficacy of Decoy-based and Psychological Cyber Deception," in *Proc. 30th USENIX Security Symp.*, Aug. 2021, pp. 3767–3784.
-
-[shahin_evaluating_2026] M. Shahin, A. Al-Fuqaha, and M. Guizani, "Evaluating Synthetic Cyber Deception Strategies Under Uncertainty via Game Theory Approach: Linking Information Leakage and Game Outcomes in Cyber Deception," *Sensors*, vol. 26, no. 5, p. 1748, 2026, doi: 10.3390/s26051748.
-
-[zambianco_proactive_2025] M. Zambianco, P. Bellavista, and A. Corradi, "A Proactive Decoy Selection Scheme for Cyber Deception using MITRE ATT&CK," *Computers & Security*, vol. 148, p. 104144, 2025, doi: 10.1016/j.cose.2024.104144.
-
-[das_novel_2026] V. Das and B. B. Nair, "A novel multi-stage attack dataset for smart home intrusion detection," *Data in Brief*, vol. 66, p. 112770, 2026, doi: 10.1016/j.dib.2026.112770.
-
-[weinberg_phantom_2026] A. I. Weinberg, "PHANTOM: Polymorphic Honeytoken Adaptation with Narrative-Tailored Organisational Mimicry," *arXiv:2605.02992 [cs.CR]*, May 2026.
-
-[reiser_honeysweeper_2022] M. Msaad, S. Srinivasa, M. M. Andersen, D. Audran, C. U. Orji, and E. Vasilomanolakis, "Honeysweeper: Towards stealthy Honeytoken fingerprinting techniques," in *Nordic Conf. on Secure IT Systems (NordSec)*, ser. LNCS, vol. 13700, Springer, 2022, pp. 87–104, doi: 10.1007/978-3-031-22295-5_6.
-
-[kouremetis_mirage_2024] M. Kouremetis et al., "Mirage: cyber deception against autonomous cyber attacks in emulation and simulation," *Cybersecurity*, vol. 7, no. 1, p. 79, 2024, doi: 10.1186/s42400-024-00272-4.
-
-[wushishi_d3o-iiot_2025] A. Wushishi et al., "D3O-IIoT: deep reinforcement learning-driven dynamic deception orchestration for industrial IoT security," *Scientific Reports*, vol. 16, p. 1205, 2025, doi: 10.1038/s41598-025-33426-4.
-
-[safargalieva_ohra_nodate] A. Safargalieva, A. Rüffer, and E. Vasilomanolakis, "OHRA: dynamic multi-protocol LLM-based cyber deception," in *Proc. Nordic Conf. on Secure IT Systems (NordSec)*, 2025.
-
-[bridges_sok_2026] R. A. Bridges, T. R. Mitchell, M. Muñoz, and T. Henriksson, "SoK: Honeypots & LLMs, More Than the Sum of Their Parts?," *arXiv:2510.25939 [cs.CR]*, Oct. 2025.
+Các trích dẫn trong bản tiếng Việt là dạng rút gọn để dễ đọc; khóa và thông tin thư mục đầy đủ xem trong `ref.bib` và phần References của báo cáo LaTeX.

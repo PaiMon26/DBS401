@@ -8,6 +8,7 @@
 \usepackage{enumitem}
 \usepackage[hidelinks]{hyperref}
 \usepackage[backend=biber,style=ieee]{biblatex}
+\usepackage{amsmath}
 
 \setmainfont{Times New Roman}
 \setstretch{1.5}
@@ -75,7 +76,7 @@ The raw trace is the foundation for downstream analysis. A logging profile that 
 Recent work has also explored large language models for interpreting security alerts and mapping low-level observations to higher-level attack behavior. Schärmer et al. evaluate ChatGPT and Gemini for classifying IDS alerts and report that carefully chosen few-shot examples and system context support more effective classification, while noting limitations related to cost, reliability, and sensitive-data exposure \cite{afzal_let_2027}. Meng et al. present RHINO, which maps network logs to adversarial tactics and techniques; they argue that single-step LLM classification often hallucinates technique names and produces decontextualized mappings, and they propose guided reasoning as an alternative \cite{meng_rhino_2025}. These findings motivate testing contextual classification and evidence selection on database query traces, rather than assuming that a model label alone is a reliable explanation.
 
 \section{Problem Statement}
-Despite the relevance of honeypots and language-model-assisted security analysis, three practical questions remain for the proposed PostgreSQL setting. First, logging profiles may differ in their ability to capture the actions needed to identify eight project-defined behavior classes: Discovery, Credential Access, Privilege Escalation, Execution, Collection, Exfiltration, Impact/Persistence, and Other/Noise. The project must quantify these differences and determine whether the resulting records contain the fields required for later analysis. Second, captured log lines may not directly identify a complete attack session. Sessionization based on an inactivity threshold can merge unrelated activity or split a real multi-step sequence, and its accuracy must be measured against known scenario ground truth. Third, query-level classification is difficult when the meaning of a query depends on earlier events. Rule-based methods may be transparent but brittle to variations; a few-shot language model may use context more flexibly but can produce unsupported labels or evidence identifiers. Neither approach should be considered reliable without measuring both classification and evidence quality.
+Despite the relevance of honeypots and language-model-assisted security analysis, three practical questions remain for the proposed PostgreSQL setting. First, logging profiles may differ in their ability to capture the actions needed to identify seven project-defined behavior classes: Discovery, Credential Access, Privilege Escalation, Collection, Exfiltration, Impact, and Noise. Six of these classes describe attack stages and one describes benign activity. The project must quantify these differences and determine whether the resulting records contain the fields required for later analysis. Second, captured log lines may not directly identify a complete attack session. Sessionization based on an inactivity threshold can merge unrelated activity or split a real multi-step sequence, and its accuracy must be measured against known scenario ground truth. Third, query-level classification is difficult when the meaning of a query depends on earlier events. Rule-based methods may be transparent but brittle to variations; a few-shot language model may use context more flexibly but can produce unsupported labels or evidence identifiers. Neither approach should be considered reliable without measuring both classification and evidence quality.
 
 A further challenge is generalization. A method can perform well on variations that resemble its development scenarios while failing on a technique family that was not used to write its rules or examples. To assess this distinction, the evaluation needs a controlled split by scenario family, with held-out families kept isolated from method development. It must also compare not only predicted labels but the query evidence used to justify them. Without this separation and evidence-level evaluation, apparent performance may reflect leakage or familiar patterns rather than the ability to analyze unseen behavior.
 
@@ -122,7 +123,7 @@ The project is limited to a locally run PostgreSQL honeypot in Docker, populated
 RQ1 compares four logging profiles, with the exact parameter values frozen in the methodology before scenario runs. C0 sets \texttt{log\_statement = all}. C1 enables pgAudit session logging. C2 extends C1 with \texttt{log\_connections}, \texttt{log\_disconnections}, \texttt{log\_min\_error\_statement}, and \texttt{pgaudit.log\_parameter}. C3, a proxy or packet-capture configuration, is conditional on the time available and will be reported only if implemented. Parsed records will be normalized to a shared schema. Sessionization will use source IP, user, and inactivity thresholds, and evaluation will compare reconstructed grouping with scenario ground truth. The experiment will record action recall, field completeness, pairwise session metrics, log volume, and query latency.
 
 \subsection*{Taxonomy and labeling}
-The eight labels are a project taxonomy. Statements that invoke program-execution features, such as \texttt{COPY ... FROM PROGRAM}, are labeled Execution; this label was added because such statements are a documented PostgreSQL attack pattern \cite{song_decoy_2025} that does not fit the remaining classes. Labeling rules for file-access and large-object functions such as \texttt{pg\_read\_file} and \texttt{lo\_export} will be written before scenario generation, and any ambiguous case will be recorded in the ground-truth documentation.
+The seven labels are a project taxonomy: six attack stages and one benign class, Noise. Statements that invoke program-execution features, such as \texttt{COPY ... FROM PROGRAM}, are labeled Impact, because they change system state by running operating-system commands and do not fit any other class; this mapping is a documented PostgreSQL attack pattern \cite{song_decoy_2025}. Labeling rules for file-access and large-object functions such as \texttt{pg\_read\_file} and \texttt{lo\_export} will be written before scenario generation, and any ambiguous case will be recorded in the ground-truth documentation.
 
 \subsection*{Classification and evidence}
 RQ2 will compare a rule-based classifier with a locally hosted language model of about seven to eight billion parameters, served through Ollama. Candidate models include Qwen2.5-7B-Instruct, Llama-3.1-8B-Instruct, and Mistral-7B-Instruct; the final choice will be made by a speed test on about twenty windows. Both methods will receive consistently normalized query windows. The model will produce JSON containing a label and a list of evidence identifiers. The schema constrains the format but does not restrict identifiers to the window at decoding time, so that fabricated identifiers can be measured rather than forced to zero. Development and evaluation will be split by session or scenario family, and the test set will remain sealed until the methods are fixed. Evidence ground truth will consist of the target query and its declared dependencies that remain within the context window. Smaller models were reported to perform weakly on comparable alert-interpretation tasks \cite{afzal_let_2027}, so the project will treat weak performance as a possible outcome rather than an assumption to be avoided. Output sensitivity to evaluation-set size, observed for flow-level LLM classification \cite{rehman_flows_2025}, will be checked by reporting results at more than one evaluation size.
@@ -205,6 +206,202 @@ The planned contribution is an integrated and reproducible evaluation of a local
     \item Test generalization on isolated attack-technique families that are excluded from rule and prompt development.
 \end{enumerate}
 These are planned research contributions, not reported experimental findings. The project will use the results to identify the logging and analysis trade-offs observed in its controlled environment and to provide a basis for future extensions.
+
+% Insert this file into report.tex after \chapter{Literature Review} and before \printbibliography:
+%   \input{chapter3_methodology}
+
+\chapter{Methodology}
+
+\section{Research Design}
+The study is a quantitative, controlled-environment evaluation organized into three experiments, each answering one research question. RQ1 measures how well four PostgreSQL logging profiles capture attack actions and reconstruct sessions. RQ2 compares a rule-based classifier with a locally hosted few-shot large language model (LLM) on query-level attack-stage labels and evidence selection. RQ3 measures how much the performance of both methods declines when they face attack-technique families that were excluded from their development.
+
+All three experiments share one pipeline so that differences between results can be attributed to the variable under study rather than to inconsistent data handling. The pipeline has six stages: (1) a parameterized scenario generator produces attack and benign query sequences together with ground-truth labels and dependencies; (2) the sequences are executed against a local PostgreSQL honeypot under a chosen logging profile; (3) the resulting logs are parsed into a common event schema; (4) for RQ1, parsed events are grouped into sessions; (5) for RQ2 and RQ3, the events are arranged into query windows and classified; (6) predictions are compared with the ground truth using the metrics defined in Section~\ref{sec:metrics}.
+
+\section{Honeypot Environment and Logging Profiles}
+The honeypot is a PostgreSQL server running in Docker on a local machine. It is not exposed to any public network. Its databases contain fabricated data, including decoy tables whose names and contents resemble sensitive records such as user accounts and payment information. No real personal or organizational data is used.
+
+RQ1 compares four logging profiles. Their settings are summarized in Table~\ref{tab:profiles}. The profiles are ordered by increasing detail, and the expected gaps listed in the table are hypotheses that RQ1 is designed to test rather than established facts.
+
+\begin{table}[h]
+\centering
+\caption{Logging profiles compared in RQ1.}
+\label{tab:profiles}
+\begin{tabular}{p{1.1cm} p{5.2cm} p{6.2cm}}
+\hline
+Profile & Configuration & Expected gaps (hypotheses) \\
+\hline
+C0 & \texttt{log\_statement = all} & Statements that fail to parse are not recorded; failed logins are not recorded; prepared statements are recorded as templates without parameter values. \\
+C1 & pgAudit session logging & Connection and disconnection events are not recorded; parameter values of prepared statements are not recorded. Statement types and failed statements are classified. \\
+C2 & C1 plus \texttt{log\_connections}, \texttt{log\_disconnections}, \texttt{log\_min\_error\_statement}, and \texttt{pgaudit.log\_parameter} & Expected to capture all six session attributes: user, source IP, database, query, result, and parameters. \\
+C3 & Proxy or packet capture (conditional) & Included only if time permits; reported separately if implemented. \\
+\hline
+\end{tabular}
+\end{table}
+
+The six session attributes listed in the last row are the minimum fields required for session reconstruction and for the evidence analysis in RQ2. RQ1 checks, for each profile, whether each attribute is present in the parsed records.
+
+\section{Attack Taxonomy and Scenario Generation}
+\subsection{Behavior labels}
+Each query is assigned one of seven labels. Six labels describe attack stages and one describes benign activity. The labels are a project taxonomy aligned with the concepts of the MITRE ATT\&CK framework; they are not a verbatim copy of its tactics. Table~\ref{tab:labels} defines each label and gives representative PostgreSQL statements.
+
+\begin{table}[h]
+\centering
+\caption{Behavior labels and representative statements.}
+\label{tab:labels}
+\begin{tabular}{p{2.8cm} p{5.6cm} p{4.1cm}}
+\hline
+Label & Definition & Representative statements \\
+\hline
+Discovery & Probing the structure of the database and server & Queries on \texttt{information\_schema}, \texttt{pg\_catalog}, \texttt{version()} \\
+Credential Access & Obtaining or guessing account credentials & Reading credential tables; repeated failed logins \\
+Privilege Escalation & Gaining higher database privileges & \texttt{ALTER USER ... SUPERUSER}, \texttt{GRANT} \\
+Collection & Reading sensitive data in bulk & \texttt{SELECT} over sensitive tables, large result sets \\
+Exfiltration & Moving data outside the database & \texttt{COPY ... TO}, \texttt{lo\_export}, \texttt{dblink} to another server \\
+Impact & Altering or destroying data or structure & \texttt{DROP TABLE}, \texttt{UPDATE}, \texttt{DELETE}, \texttt{COPY ... FROM PROGRAM} \\
+Noise & Ordinary queries that are not part of an attack & Routine application-style reads and writes \\
+\hline
+\end{tabular}
+\end{table}
+
+Statements that invoke program-execution features, such as \texttt{COPY ... FROM PROGRAM}, are assigned to Impact. They change system state by running operating-system commands, and no other label fits them. This rule is fixed before scenario generation and applies to every scenario and to the ground-truth files.
+
+Labeling rules for file-access and large-object functions, such as \texttt{pg\_read\_file} and \texttt{lo\_export}, will be written before scenario generation. Any statement that the rules cannot assign unambiguously is recorded in the ground-truth documentation rather than resolved by the classifier.
+
+\subsection{Parameterized scenario generator}
+A Python generator produces attack and benign sessions from a set of templates. Each template is a sequence of steps. Every step carries three fields: a stage label from Table~\ref{tab:labels}, a unique step identifier, and a \texttt{depends\_on} list naming the earlier steps whose results the step uses. The \texttt{depends\_on} links define the evidence ground truth for RQ2. Because the links are declared in the template, the ground truth is generated automatically rather than annotated after the fact.
+
+The generator varies the following parameters to produce distinct instances of each template: table and column names, step order where the template permits it, client tool or library, literal values, and inter-statement timing with random jitter. Step identifiers are kept in the generator's own records and are never embedded in the SQL text, so that the honeypot logs and the classifier input contain no information that a real attacker could not produce.
+
+Scenarios are grouped into families. A family is a set of scenarios that share the same main technique and target. The known families are used to develop the rules and prompts in RQ1 and RQ2. Two or three held-out families are used only in RQ3. These held-out families are written by a team member who does not write the rules or prompts, and they are fixed before any method is developed, so that they cannot be adapted to after the fact. The benign Noise sessions are generated from routine query patterns and are mixed into every experiment so that the classifiers must distinguish attacks from ordinary activity.
+
+\section{Data Collection}
+\subsection{RQ1 data}
+Every scenario variant is executed under each of the four logging profiles. The same scenario set is therefore observed four times, which allows coverage to be compared directly. The scenario runner records, on the client side, every statement it sends together with its send timestamp, connection identifier, and step identifier. These client-side records provide the ground truth for matching each honeypot log record to a scenario step, without modifying the SQL text.
+
+For each profile, the parser converts the raw PostgreSQL log into the common schema. The schema has one record per event, with fields for timestamp, user, source IP, database, statement text, result status, and bound parameters. Fields that a profile does not record are stored as missing rather than inferred.
+
+Overhead is measured in the same runs. Log volume is measured as the number of bytes written per session. Query latency is measured as the wall-clock time per statement, with and without each profile enabled, on the same hardware. Each measurement is repeated, and median values with interquartile ranges are reported.
+
+\subsection{RQ2 and RQ3 data}
+The classification dataset consists of 100 labeled queries drawn from the known scenario families and the Noise sessions. These queries are collected under profile C2, which records all six attributes. Classification is therefore not limited by missing fields. If RQ1 selects a lighter profile, RQ2 will be repeated on that profile as a sensitivity check, and any difference will be reported.
+
+Before classification, every query is normalized. Literal values are replaced with typed placeholders, such as \texttt{<STR>} and \texttt{<NUM>}. Table and column identifiers are renamed according to a consistent mapping that is generated independently for each scenario, so that a method cannot learn a specific table name as a cue for a label. The original statement text is retained in the ground-truth files, and the normalized text is used only as the classifier input.
+
+\section{Data Splitting}
+\label{sec:split}
+The dataset is split with \texttt{StratifiedGroupKFold} from scikit-learn \cite{scikit-learn_stratifiedgroupkfold}. The configuration is \texttt{n\_splits = 3}, \texttt{shuffle = True}, and \texttt{random\_state = 42}. The group variable is the session or scenario identifier, so that all queries from the same session are kept in the same fold. This preserves the \texttt{depends\_on} chains that RQ2 relies on and prevents query-level leakage between training and test data. The stratification variable is the label, which keeps the distribution of the seven classes approximately equal across folds, so that macro-averaged F1 reflects all classes.
+
+One fold, containing about one third of the queries, is held out as the sealed test set. The remaining two folds, about two thirds of the data, are used for development and training. Within this portion, a further grouped split is used for tuning. The test fold is not used to select rules, prompt examples, or context length, and it is evaluated once after those choices are fixed.
+
+\textit{Note on split proportions:} This configuration gives approximately 67\% training and 33\% test data, not the 70\% and 30\% originally planned. The 3-fold configuration is kept because \texttt{StratifiedGroupKFold} generates folds of this size. With 100 queries, the test fold contains about 33 queries across seven classes, so some classes will have very few test examples. Per-class results on the test fold must be interpreted with this limitation in mind (see Section~\ref{sec:limits}).
+
+\section{Analysis Techniques}
+\label{sec:analysis}
+\subsection{RQ1: coverage and session reconstruction}
+Action-level recall is computed for each label group $g$ and each profile $p$:
+\[
+\mathrm{Recall}_{p,g} = \frac{\text{number of actions in } g \text{ detected under } p}{\text{number of actions in } g}.
+\]
+An action is detected if a parsed record matches its executed statement after normalization and contains every attribute that its label requires. For example, a failed-login action requires the user, the source IP, and the result status. An action that appears in the log but lacks a required attribute is counted as not detected and is reported separately as a field-completeness failure.
+
+Field completeness is the proportion of parsed records that contain all six session attributes under each profile.
+
+Sessions are reconstructed by grouping parsed events that share the same source IP, user, and database, with a new session starting whenever the gap between consecutive events exceeds the inactivity threshold. Thresholds of 1, 5, 15, and 30 minutes are tested. A reconstructed session is counted as matched to a true session if the two contain exactly the same set of actions. Session recall is the number of matched sessions divided by the number of true sessions. Session precision is the number of matched sessions divided by the number of reconstructed sessions. Session F1 is their harmonic mean. Pairwise precision, recall, and F1 over event pairs are reported as a secondary measure, because a single merged or split session affects the exact-match score strongly.
+
+The selection rule for RQ1 has three parts. A profile is eligible only if it reaches a recall of at least 95\% for every label group and contains all six attributes for the RQ2 analysis. Among eligible profiles, the one with the lowest combined log volume and latency cost is selected. If no profile is eligible, the best available profile is selected and the shortfall is reported explicitly.
+
+\subsection{Rule-based classifier}
+The rule-based method assigns a label to each query by matching conditions over the query window. Each rule may refer to the current query and to earlier queries in the window, so the rules can express dependencies such as a query that reads a value obtained by an earlier query. Rules are written and refined only on the development folds. Their output contains the predicted label and the identifiers of the queries that satisfied the conditions of the matched rule. These identifiers are the rule-based evidence set.
+
+\subsection{LLM few-shot classifier}
+The LLM method uses Llama~3.1 8B Instruct served locally through Ollama \cite{ollama_docs}, with no fine-tuning. Temperature is set to 0 and a fixed random seed is used. The model version, Ollama version, and hardware are recorded with every run. The model is selected by a speed test on about 20 windows. If the 8B model is too slow for the planned number of runs, a smaller model in the same family will be used, and the change will be reported.
+
+The prompt is built from five components, following the structure of guided reasoning approaches for security classification \cite{meng_rhino_2025,meng_benchmarking_2026}. Prompt design also affects reliability substantially for structured security data \cite{rehman_flows_2025}, which motivates the explicit output constraints below.
+\begin{enumerate}
+    \item \textbf{Role and task.} The model is instructed to act as a cybersecurity analyst who classifies PostgreSQL statements into attack stages.
+    \item \textbf{Label space.} The model may output only one of the seven labels in Table~\ref{tab:labels}.
+    \item \textbf{Output format.} The model must return only a JSON object of the form \texttt{\{"label": ..., "evidence\_ids": [...]\}}, with no explanation outside the object.
+    \item \textbf{Few-shot examples.} Two or three input–output pairs are included. They are drawn only from the development folds and never from the test fold.
+    \item \textbf{Target input.} The query window, containing the current query and the $k$ preceding queries from the same session, is given as a list of objects with identifiers.
+\end{enumerate}
+
+An example of the prompt structure is shown below. The labels and the example are placeholders for the final prompt text.
+
+\begin{verbatim}
+You are a cybersecurity analyst. Classify the last query in the window
+into exactly one of: Discovery, Credential Access, Privilege Escalation,
+Collection, Exfiltration, Impact, Noise.
+Return only JSON: {"label": "<label>", "evidence_ids": ["<id>", ...]}
+No text outside the JSON.
+
+Example 1:
+Input: [{"id":"q1","query":"SELECT * FROM users"},
+        {"id":"q2","query":"COPY users TO '/tmp/data.csv'"}]
+Output: {"label": "Exfiltration", "evidence_ids": ["q1"]}
+
+Input: <query window inserted here>
+\end{verbatim}
+
+Output is parsed with \texttt{json.loads} inside a \texttt{try}/\texttt{except} block. An output that cannot be parsed, or that contains a label outside the seven allowed values, is counted as an invalid output and as an incorrect prediction. No retry is performed, so that the invalid-output rate reflects the first response of the model.
+
+Evidence identifiers are not restricted to the window at decoding time. This allows fabricated identifiers to be measured rather than prevented by construction. An identifier is counted as fabricated if it does not correspond to any query in the window.
+
+\subsection{Evaluation metrics}
+\label{sec:metrics}
+Classification performance is reported as macro-averaged F1, which is the unweighted mean of the per-class F1 scores. This prevents the frequent classes from dominating the result. Per-class precision, recall, and F1 are reported alongside, together with a confusion matrix that shows which label pairs are confused. For example, the matrix shows whether Credential Access queries are most often predicted as Discovery.
+
+Technical output reliability is measured by the invalid-output rate and by the fabricated-evidence rate, defined as the number of fabricated identifiers divided by the total number of identifiers returned by the LLM.
+
+Evidence quality is measured against the ground truth derived from \texttt{depends\_on}. For a target query $t$ in a window, the ground-truth evidence set is $E^{\text{gt}}_t = \{t\} \cup \{d \in \text{depends\_on}(t) : d \text{ lies within the window}\}$. The predicted evidence set $E^{\text{pred}}_t$ is the set of identifiers returned by the method. Two measures are reported: the Jaccard index $|E^{\text{pred}}_t \cap E^{\text{gt}}_t| / |E^{\text{pred}}_t \cup E^{\text{gt}}_t|$, averaged over all queries, and evidence precision, recall, and F1 computed over the same sets. Evidence is evaluated only for $k \geq 2$, because with $k = 0$ the window contains only the target query, and evidence selection is then trivial.
+
+Ground-truth quality is checked by manual review of a 20\% sample of the queries, stratified across labels. Each sampled evidence set is rated by a reviewer who did not write the rules or the prompts as complete (the automatically generated set is correct), missing a necessary query (incomplete), or containing a superfluous query (over-inclusive). The Jaccard index between the automatic and manual sets is reported as an estimate of ground-truth reliability. The manual review is performed only after the rules and prompts are fixed, to avoid tuning the ground truth toward a method.
+
+\subsection{Effect of context length}
+The context length $k \in \{0, 2, 4\}$ is varied while everything else is held constant. For each value, macro-F1, evidence F1 (for $k \geq 2$), and average inference time per window are recorded. The results are plotted against $k$ to show whether additional context improves classification, whether it improves evidence selection, and whether the time cost grows faster than the benefit. The value of $k$ that gives the best development performance is carried forward to the test fold.
+
+\subsection{Uncertainty and comparison}
+Confidence intervals for macro-F1 and evidence F1 are estimated by bootstrap resampling over sessions rather than over individual queries, because queries within a session are dependent. The two methods are compared on the same test fold, and differences are reported with their bootstrap intervals.
+
+\subsection{RQ3: performance under unseen families}
+For each method, the performance drop is defined as $\Delta F_1 = F_1^{\text{known}} - F_1^{\text{new}}$, where $F_1^{\text{known}}$ is measured on the known-family test fold and $F_1^{\text{new}}$ on the held-out families. A small $\Delta F_1$ indicates that the method generalizes well. The same definition is applied to macro-F1 and to evidence F1. Per-class F1 on the held-out families and the change in fabricated-evidence rate are reported in addition.
+
+To explain the drop, each held-out family is scored on three factors using the rubric in Table~\ref{tab:rubric}. Each factor is scored from 1 to 3. Two independent coders score each family, and disagreements are resolved by discussion. With only two or three held-out families, the relation between the factor scores and $\Delta F_1$ is descriptive and cannot establish a general effect. It is reported as an observation about these families only.
+
+\begin{table}[h]
+\centering
+\caption{Rubric for characterizing the novelty of a held-out attack-technique family.}
+\label{tab:rubric}
+\begin{tabular}{p{3.2cm} p{4.2cm} p{4.2cm} p{3.4cm}}
+\hline
+Factor & 1 & 2 & 3 \\
+\hline
+SQL structural novelty & Differs only in table names, parameters, columns, or conditions & Nested statements or unusual combinations of logical conditions & Multi-layer or second-order constructions, such as string-built statements \\
+PostgreSQL-specific functions & Standard SQL only & Some system-information functions & Specialized functions or advanced extensions \\
+Dependency complexity & Independent steps or chains with $k = 1$ & Chains with $k = 2$ to $3$ & Long-range, fragmented chains where the relevant steps are far apart \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Limitations of the Methodology}
+\label{sec:limits}
+The methodology has several limitations that affect how the results can be interpreted.
+
+First, the dataset is small. With 100 queries, the test fold contains about 33 queries across seven labels, so per-class estimates are unstable and some classes may have only one or two test examples. Results should be reported with bootstrap intervals and interpreted as indicative rather than definitive.
+
+Second, the attack behavior is synthetic. Scenarios are generated from templates informed by the literature \cite{song_decoy_2025,gomez-lopez_multi-agent_2026,landauer_cam-lds_2026}. They represent the behaviors the team chose to simulate, not the distribution of real attacks, and the ground truth reflects the template design. Realistic attacks may use techniques outside these templates.
+
+Third, the taxonomy is a project choice. Seven labels cannot represent every PostgreSQL behavior. Boundary cases, such as program-execution statements mapped to Impact, are a labeling decision that may not match other taxonomies, and the mapping rule is applied consistently but may affect the Impact class results.
+
+Fourth, the held-out evaluation is limited. Two or three families can indicate whether performance drops, but they cannot characterize all unknown attack techniques, and the relation between novelty factors and performance drop is not statistically generalizable.
+
+Fifth, the LLM is not deterministic in practice, even with temperature 0 and a fixed seed, because inference libraries and hardware can introduce small numerical differences. Results are therefore reported with the model version, software versions, and hardware specification, and the study does not claim that identical results will be produced on other systems.
+
+Sixth, latency and log volume depend on the hardware and the workload, and the overhead measurements are valid only for the environment in which they are taken.
+
+Finally, the rubric scores and the manual evidence review involve human judgment. Inter-coder agreement is reported to show how consistent these judgments are, but disagreements remain a source of uncertainty.
+
+\section{Reproducibility and Ethical Considerations}
+All generator code, parser code, prompts, rule definitions, random seeds, and split indices will be stored in a version-controlled repository so that every table and figure can be regenerated. The honeypot holds fabricated data only, is not exposed to external networks, and does not run real malware. The scenario generator produces SQL statements only, and no live attack infrastructure is used.
 
 \printbibliography[title={References}]
 

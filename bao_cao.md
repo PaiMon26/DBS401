@@ -19,8 +19,6 @@ Honeypot cơ sở dữ liệu có thể cho thấy kẻ tấn công sử dụng 
 
 Nhóm cảm ơn thầy Hồ Hải đã hướng dẫn đồ án môn học DBS401 và góp ý cho đề cương.
 
-Nhóm cũng ghi lại các công cụ và agent đã tham gia vì điều này ảnh hưởng đến mức độc lập của dữ liệu. Trợ lý AI Claude (Anthropic) hỗ trợ viết trình mô phỏng, bộ phân tích log, mã đánh giá và bộ kiểm thử; viết các kịch bản của tập họ kỹ thuật chưa thấy thứ nhất (OOD-1) trước khi đóng băng các phương pháp; và là người duy nhất rà soát bằng chứng thủ công. Một agent AI khác viết các kịch bản Holdout và tập chưa thấy thứ hai (OOD-2). Hệ quả đối với tính độc lập của dữ liệu được nêu ở mục 3.2.4 và 3.4.
-
 ## Từ viết tắt
 
 | Ký hiệu | Nghĩa |
